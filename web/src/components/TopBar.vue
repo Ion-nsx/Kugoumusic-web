@@ -49,6 +49,7 @@
             <div class="settings-label" style="margin-top:20px">搜索排序</div>
             <div class="theme-toggle" @click="toggleOriginalFirst">
               <span :class="{ on: originalFirst }">原版优先</span>
+              <span :class="{ on: !originalFirst }">原始排序</span>
             </div>
             </div>
           </div>
