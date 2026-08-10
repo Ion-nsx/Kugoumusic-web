@@ -124,6 +124,8 @@ func main() {
 	mux.HandleFunc("/api/cloud/list", handleCloudList)
 	mux.HandleFunc("/api/cloud/delete", handleCloudDelete)
 	mux.HandleFunc("/api/cloud/url", handleCloudURL)
+	mux.HandleFunc("/api/cloud/match", handleCloudMatch)
+	mux.HandleFunc("/api/cloud/upload", handleCloudUpload)
 
 	// ===== 静态文件（前端 SPA） =====
 	mux.HandleFunc("/", handleStatic)
@@ -1486,4 +1488,62 @@ func handleCloudURL(w http.ResponseWriter, r *http.Request) {
 	audioID, _ := strconv.ParseInt(getQueryParam(r, "audio_id"), 10, 64)
 	name := getQueryParam(r, "name")
 	writeUpstream(w, api.GetCloudURL(hash, albumAudioID, audioID, name))
+}
+
+func handleCloudMatch(w http.ResponseWriter, r *http.Request) {
+	hash := getQueryParam(r, "hash")
+	if hash == "" {
+		writeError(w, 400, "hash 参数必填")
+		return
+	}
+	albumAudioID, _ := strconv.ParseInt(getQueryParam(r, "album_audio_id"), 10, 64)
+	writeUpstream(w, api.GetCloudMatch(hash, albumAudioID))
+}
+
+func handleCloudUpload(w http.ResponseWriter, r *http.Request) {
+	creds := getCredentials(r)
+	if creds.Token == "" || creds.UserID == "" {
+		writeError(w, 401, "请先登录")
+		return
+	}
+
+	// 限制上传文件大小（50MB）
+	r.Body = http.MaxBytesReader(w, r.Body, 50<<20)
+	if err := r.ParseMultipartForm(50 << 20); err != nil {
+		writeError(w, 400, "文件过大或格式错误: "+err.Error())
+		return
+	}
+
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		writeError(w, 400, "请上传文件: "+err.Error())
+		return
+	}
+	defer file.Close()
+
+	fileData, err := io.ReadAll(file)
+	if err != nil {
+		writeError(w, 500, "读取文件失败: "+err.Error())
+		return
+	}
+	if len(fileData) == 0 {
+		writeError(w, 400, "文件为空")
+		return
+	}
+
+	// 从文件名提取扩展名
+	filename := ""
+	extendname := "mp3"
+	if header != nil {
+		filename = header.Filename
+		// 去掉扩展名用于匹配
+		if dot := strings.LastIndex(filename, "."); dot > 0 {
+			extendname = filename[dot+1:]
+			filename = filename[:dot] // 不含扩展名部分
+		}
+	}
+
+	autoMatch := getQueryParam(r, "auto_match") != "0"
+	resp := api.UploadCloudFile(fileData, filename, extendname, autoMatch, creds.UserID, creds.Token)
+	writeUpstream(w, resp)
 }

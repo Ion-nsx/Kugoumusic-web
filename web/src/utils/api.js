@@ -190,5 +190,14 @@ export const deleteCloudFile = (ids, albumAudioIds = '') =>
 // 获取云盘文件播放地址
 export const getCloudURL = (hash, album_audio_id = 0, audio_id = 0, name = '') =>
   api.get('/cloud/url', { params: { hash, album_audio_id, audio_id, name } })
+// 曲库匹配（上传前匹配文件 hash）
+export const cloudMatch = (hash, album_audio_id = 0) =>
+  api.get('/cloud/match', { params: { hash, album_audio_id } })
+// 上传文件到云盘（multipart form，auto_match=1 自动匹配曲库）
+export const cloudUpload = (formData) =>
+  api.post('/cloud/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 600000,
+  })
 
 export default api

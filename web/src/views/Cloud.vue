@@ -3,12 +3,22 @@
     <div class="cloud-header">
       <div class="cloud-title-row">
         <h1 class="page-title">音乐云盘</h1>
-        <button class="refresh-btn" @click="loadFiles" :disabled="loading">
+        <button class="upload-btn" @click="triggerUpload" :disabled="uploading" :title="uploading ? '上传中...' : '上传音乐文件'">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+          {{ uploading ? '上传中...' : '上传' }}
+        </button>
+        <button class="refresh-btn" @click="loadFiles" :disabled="loading || uploading">
           <svg viewBox="0 0 24 24" :class="{ spinning: loading }"><path d="M21 2v5h-5M3.6 6.6A9 9 0 0 1 19.4 6M3 22v-5h5M20.4 17.4A9 9 0 0 1 4.6 18"/></svg>
           刷新
         </button>
       </div>
+      <input type="file" ref="fileInput" accept=".mp3,.flac,.wav,.ogg,.aac,.m4a,.wma,.ape" @change="handleFileChange" style="display:none" />
       <p class="page-sub" v-if="total > 0">共 {{ total }} 首 · 当前第 {{ page }} 页</p>
+    </div>
+
+    <div v-if="uploading" class="upload-progress">
+      <div class="progress-bar"><div class="progress-fill" /></div>
+      <p>正在上传并添加到云盘，请稍候…</p>
     </div>
 
     <div v-if="loading && !files.length" class="loading">
@@ -56,7 +66,7 @@
 import { ref, computed, onMounted, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePlayerStore } from '../stores/player'
-import { getCloudList, deleteCloudFile, imgUrl } from '../utils/api'
+import { getCloudList, deleteCloudFile, cloudUpload, imgUrl } from '../utils/api'
 
 const router = useRouter()
 const player = usePlayerStore()
@@ -64,9 +74,11 @@ const requireLogin = inject('requireLogin', null)
 
 const files = ref([])
 const loading = ref(true)
+const uploading = ref(false)
 const total = ref(0)
 const page = ref(1)
 const pageSize = 30
+const fileInput = ref(null)
 
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize)))
 
@@ -92,8 +104,6 @@ async function loadFiles() {
     const res = await getCloudList(page.value, pageSize)
     if (res.data.status === 1 && res.data.data) {
       const list = res.data.data.list || res.data.data.info || []
-      // debug: 查看第一首歌的数据结构
-      if (list.length > 0) console.log('云盘第一首:', JSON.stringify(list[0], null, 2))
       total.value = res.data.data.total || 0
       files.value = list.map(normalizeCloud).filter(Boolean)
     } else {
@@ -112,6 +122,43 @@ async function loadFiles() {
 function goPage(p) {
   page.value = p
   loadFiles()
+}
+
+function triggerUpload() {
+  if (fileInput.value) fileInput.value.click()
+}
+
+async function handleFileChange(e) {
+  const file = e.target.files?.[0]
+  if (!file) return
+
+  uploading.value = true
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('auto_match', '1')
+
+    const res = await cloudUpload(formData)
+    if (res.data.status === 1) {
+      alert('上传成功！')
+      // 跳回第一页刷新列表
+      page.value = 1
+      await loadFiles()
+    } else {
+      alert(res.data.error || '上传失败')
+    }
+  } catch (e) {
+    console.error('上传失败:', e)
+    if (e.response?.status === 401 && requireLogin) {
+      requireLogin('上传文件到云盘')
+    } else {
+      alert(e.response?.data?.error || '上传失败，请重试')
+    }
+  } finally {
+    uploading.value = false
+    // 重置 file input 以便重复选同一个文件
+    if (fileInput.value) fileInput.value.value = ''
+  }
 }
 
 async function confirmDelete(song, idx) {
@@ -133,7 +180,6 @@ async function confirmDelete(song, idx) {
 function normalizeCloud(item) {
   const hash = item.hash || ''
   const rawName = item.name || ''
-  // "歌手 - 歌名.ext" → 拆出歌手和歌名
   let singer = item.author_name || ''
   let displayName = rawName
   if (rawName.includes(' - ')) {
@@ -174,6 +220,23 @@ function normalizeCloud(item) {
 
 .page-sub { color: var(--text-3); font-size: var(--font-size-sm); margin-top: 4px; }
 
+.upload-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 16px;
+  border: 1px solid var(--primary, #2CA6F8);
+  border-radius: 20px;
+  background: var(--primary, #2CA6F8);
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.upload-btn:hover { opacity: .85; }
+.upload-btn:active { transform: scale(.95); }
+.upload-btn:disabled { opacity: .5; cursor: default; }
+.upload-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
 .refresh-btn {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 6px 16px;
@@ -191,6 +254,27 @@ function normalizeCloud(item) {
 .refresh-btn:disabled { opacity: .5; cursor: default; }
 .refresh-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .refresh-btn svg.spinning { animation: spin .8s linear infinite; }
+
+.upload-progress {
+  text-align: center; padding: 32px 0;
+}
+.upload-progress p {
+  color: var(--text-3); font-size: 13px; margin-top: 12px;
+}
+.progress-bar {
+  width: 280px; height: 4px; border-radius: 2px;
+  background: var(--glass-2); margin: 0 auto; overflow: hidden;
+}
+.progress-fill {
+  height: 100%; width: 100%;
+  background: var(--primary, #2CA6F8);
+  border-radius: 2px;
+  animation: progressAnim 2s ease-in-out infinite;
+}
+@keyframes progressAnim {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
 
 .s-del {
   width: 40px; display: flex; align-items: center; justify-content: center;
