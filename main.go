@@ -360,7 +360,26 @@ func handleSearchComplex(w http.ResponseWriter, r *http.Request) {
 	if pagesize < 1 {
 		pagesize = 10
 	}
-	writeUpstream(w, api.SearchComplex(keyword, page, pagesize, getCredentials(r)))
+	resp := api.SearchComplex(keyword, page, pagesize, getCredentials(r))
+	if resp.Error != nil {
+		writeError(w, 502, resp.Error.Error())
+		return
+	}
+	// 原版优先：对综合搜索中的歌曲段排序
+	if getQueryParam(r, "original_first") != "0" && resp.Data != nil {
+		if data, ok := resp.Data["data"].(map[string]interface{}); ok {
+			if lists, ok := data["lists"].([]map[string]interface{}); ok {
+				for _, sm := range lists {
+					if sm["type"] == "song" {
+						if songList, ok := sm["lists"].([]interface{}); ok {
+							sm["lists"] = api.SortSongMaps(songList)
+						}
+					}
+				}
+			}
+		}
+	}
+	writeUpstream(w, resp)
 }
 
 func handleSearchByType(w http.ResponseWriter, r *http.Request, typ string) {

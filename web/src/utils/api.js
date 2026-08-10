@@ -51,8 +51,11 @@ export const searchSuggest = (keyword) =>
 
 export const searchHot = () => api.get('/search/hot')
 
-export const searchComplex = (keyword, page = 1, pagesize = 20) =>
-  api.get('/search/complex', { params: { keyword, page, pagesize } })
+export const searchComplex = (keyword, page = 1, pagesize = 20) => {
+  const of = localStorage.getItem('vibe_original_first')
+  const originalFirst = of === null ? true : of !== '0'
+  return api.get('/search/complex', { params: { keyword, page, pagesize, original_first: originalFirst ? undefined : '0' } })
+}
 
 // 分类型搜索（song/album/author/mv/special）
 export const searchByType = (type, keyword, page = 1, pagesize = 20) =>

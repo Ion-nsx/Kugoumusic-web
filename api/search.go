@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -510,19 +511,146 @@ func IsNonOriginalVersion(name, singer string) bool {
 	return false
 }
 
-// SortOriginalFirst 将原版排在前，非原版排在后的稳定排序
+// SortOriginalFirst 智能排序：DJ/Remix版排最后，同歌名优先推送主唱版本
 func SortOriginalFirst(songs []Song) []Song {
 	if len(songs) <= 1 {
 		return songs
 	}
-	originals := make([]Song, 0, len(songs))
-	nonOriginals := make([]Song, 0, len(songs))
+
+	// 统计每个歌名对应歌手的出现次数，找出主唱（出现最多的歌手）
+	singerBySong := map[string]map[string]int{}
 	for _, s := range songs {
+		if singerBySong[s.Name] == nil {
+			singerBySong[s.Name] = map[string]int{}
+		}
+		singerBySong[s.Name][s.Singer]++
+	}
+	primarySinger := map[string]string{}
+	for name, singers := range singerBySong {
+		best, maxN := "", 0
+		for singer, n := range singers {
+			if n > maxN {
+				maxN, best = n, singer
+			}
+		}
+		primarySinger[name] = best
+	}
+
+	type scoredItem struct {
+		song  Song
+		score int
+	}
+	items := make([]scoredItem, len(songs))
+	for i, s := range songs {
+		score := 100
+		// DJ/Remix 严重扣分
 		if IsNonOriginalVersion(s.Name, s.Singer) {
-			nonOriginals = append(nonOriginals, s)
+			score -= 90
+		}
+		// 主唱加分
+		if primary, ok := primarySinger[s.Name]; ok && primary != "" && s.Singer == primary {
+			score += 20
+		}
+		// 同歌名有多版本但非主唱：轻微扣分
+		if singers, ok := singerBySong[s.Name]; ok && len(singers) > 1 {
+			if s.Singer != primarySinger[s.Name] {
+				score -= 5
+			}
+		}
+		// 高质量加分
+		if s.BitRate >= 320 {
+			score += 10
+		} else if s.BitRate > 128 {
+			score += 5
+		}
+		if s.Size > 10*1024*1024 {
+			score += 5
+		}
+		items[i] = scoredItem{song: s, score: score}
+	}
+
+	sort.SliceStable(items, func(i, j int) bool {
+		return items[i].score > items[j].score
+	})
+
+	result := make([]Song, len(songs))
+	for i, it := range items {
+		result[i] = it.song
+	}
+	return result
+}
+
+// SortSongMaps 对综合搜索中的歌曲 map 列表做原版优先排序
+func SortSongMaps(songs []interface{}) []interface{} {
+	if len(songs) <= 1 {
+		return songs
+	}
+
+	// 从 map 中提取歌手/歌名信息
+	type songMeta struct {
+		idx    int
+		name   string
+		singer string
+	}
+	metas := make([]songMeta, len(songs))
+	for i, s := range songs {
+		m, ok := s.(map[string]interface{})
+		if ok {
+			name, _ := m["name"].(string)
+			singer, _ := m["singer"].(string)
+			metas[i] = songMeta{idx: i, name: name, singer: singer}
 		} else {
-			originals = append(originals, s)
+			metas[i] = songMeta{idx: i}
 		}
 	}
-	return append(originals, nonOriginals...)
+
+	// 统计主唱
+	singerBySong := map[string]map[string]int{}
+	for _, m := range metas {
+		if singerBySong[m.name] == nil {
+			singerBySong[m.name] = map[string]int{}
+		}
+		singerBySong[m.name][m.singer]++
+	}
+	primarySinger := map[string]string{}
+	for name, singers := range singerBySong {
+		best, maxN := "", 0
+		for singer, n := range singers {
+			if n > maxN {
+				maxN, best = n, singer
+			}
+		}
+		primarySinger[name] = best
+	}
+
+	type scoredIdx struct {
+		idx   int
+		score int
+	}
+	scored := make([]scoredIdx, len(songs))
+	for i, m := range metas {
+		score := 100
+		if IsNonOriginalVersion(m.name, m.singer) {
+			score -= 90
+		}
+		if primary, ok := primarySinger[m.name]; ok && primary != "" && m.singer == primary {
+			score += 20
+		}
+		if singers, ok := singerBySong[m.name]; ok && len(singers) > 1 {
+			if m.singer != primarySinger[m.name] {
+				score -= 5
+			}
+		}
+		scored[i] = scoredIdx{idx: m.idx, score: score}
+	}
+
+	sort.SliceStable(scored, func(i, j int) bool {
+		return scored[i].score > scored[j].score
+	})
+
+	result := make([]interface{}, len(songs))
+	for i, sc := range scored {
+		result[i] = songs[sc.idx]
+	}
+	return result
 }
