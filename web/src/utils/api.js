@@ -55,6 +55,10 @@ export const searchComplex = (keyword, page = 1, pagesize = 20) =>
 export const searchByType = (type, keyword, page = 1, pagesize = 20) =>
   api.get(`/search/${type}`, { params: { keyword, page, pagesize } })
 
+// 歌词搜索
+export const searchLyric = (keyword, artist = '', duration = '', album = '') =>
+  api.get('/search/lyric', { params: { keyword, artist, duration, album } })
+
 // 歌曲
 export const getSongURL = (hash, album_id = '', bitrate = 0, quality = '', vip_token = '', vip_type = '') =>
   api.get('/song/url', { params: { hash, album_id, bitrate, quality, vip_token, vip_type } })

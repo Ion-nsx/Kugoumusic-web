@@ -237,14 +237,6 @@ func SearchHot(creds *Credentials) *APIResponse {
 	})
 }
 
-// 歌词搜索（已迁移）
-// 原 mobilecdn /api/v3/search/lrc 已失效（404），改用 lyrics.kugou.com/v1/search
-// （MoeKoeMusic search_lyric.js：keyword/hash/duration/man/lrctxt + android 签名）
-// 响应 data.candidates 为候选歌词数组
-func SearchLyric(keyword, artist, duration, album string, creds *Credentials) *APIResponse {
-	return GetLyricSearch("", keyword, "", creds)
-}
-
 // 解析搜索歌曲响应
 func ParseSearchSongs(resp *APIResponse) *SearchResult {
 	if resp.Error != nil || resp.Data == nil {

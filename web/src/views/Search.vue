@@ -181,10 +181,28 @@
           </div>
         </div>
       </template>
+
+      <!-- 歌词 -->
+      <template v-else-if="searchType === 'lyric'">
+        <div class="song-table" v-if="lyricList.length">
+          <div class="song-head"><span></span><span></span><span class="h-name">歌曲</span><span>专辑</span><span>歌手</span><span></span><span>时长</span></div>
+          <div class="song-row" v-for="(item, idx) in lyricList" :key="item.id || idx" @click="playLyricSong(idx)">
+            <div class="idx"><span class="num">{{ pad(idx + 1) }}</span></div>
+            <div class="s-cover">
+              <img v-if="item.img" :src="imgUrl(item.img)" :alt="item.song" loading="lazy" />
+              <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            </div>
+            <div class="s-name">{{ item.song }}</div>
+            <div class="s-album link" @click.stop="goAlbum(item.album_id)">{{ item.album }}</div>
+            <div class="s-artist link" @click.stop="goArtist(item.singer_id)">{{ item.singer }}</div>
+            <div class="dur">{{ formatDuration(item.durationSec) }}</div>
+          </div>
+        </div>
+      </template>
     </div>
 
     <!-- 分页 -->
-    <div class="pagination" v-if="totalPages > 1 && keyword && searchType !== 'complex'">
+    <div class="pagination" v-if="totalPages > 1 && keyword && searchType !== 'complex' && searchType !== 'lyric'">
       <button class="pg-btn" :disabled="page === 1" @click="goPage(1)">首页</button>
       <button class="pg-btn" :disabled="page === 1" @click="goPage(page - 1)">‹</button>
       <button
@@ -206,7 +224,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { usePlayerStore } from '../stores/player'
-import { searchSongs, searchHot, searchComplex, searchByType, imgUrl, getTopPlaylist, getSearchDefault } from '../utils/api'
+import { searchSongs, searchHot, searchComplex, searchByType, searchLyric, imgUrl, getTopPlaylist, getSearchDefault } from '../utils/api'
 
 const router = useRouter()
 const route = useRoute()
@@ -220,6 +238,7 @@ const defaultWords = ref([])
 const loading = ref(false)
 const complexData = ref(null)
 const typedLists = ref([])
+const lyricList = ref([])
 const page = ref(1)
 const total = ref(0)
 const switchingPage = ref(false)
@@ -247,7 +266,8 @@ const tabs = [
   { type: 'song', name: '单曲' },
   { type: 'special', name: '歌单' },
   { type: 'album', name: '专辑' },
-  { type: 'author', name: '歌手' }
+  { type: 'author', name: '歌手' },
+  { type: 'lyric', name: '歌词' }
 ]
 
 const complexSegments = computed(() => {
@@ -260,6 +280,7 @@ const hasAnySegment = computed(() => complexSegments.value.some(s => (s.lists ||
 
 const isEmpty = computed(() => {
   if (searchType.value === 'complex') return !hasAnySegment.value
+  if (searchType.value === 'lyric') return lyricList.value.length === 0
   return typedLists.value.length === 0 && songs.value.length === 0
 })
 
@@ -315,6 +336,7 @@ function clearSearch() {
   keyword.value = ''
   songs.value = []
   typedLists.value = []
+  lyricList.value = []
   complexData.value = null
   page.value = 1
   total.value = 0
@@ -347,6 +369,24 @@ async function doSearch() {
         songs.value = res.data.data.songs || res.data.data.lists || []
         total.value = res.data.data.total || 0
       }
+      typedLists.value = []
+    } else if (searchType.value === 'lyric') {
+      const res = await searchLyric(keyword.value)
+      if (res.data.status === 1 && res.data.data) {
+        const raw = res.data.data.songs || res.data.data.info || []
+        lyricList.value = raw.map((s, i) => ({
+          id: s.hash || s.id || '',
+          song: s.name || s.songname || '',
+          singer: s.singer || s.singername || '',
+          album: s.album || s.albumname || '',
+          album_id: s.album_id || '',
+          singer_id: s.singer_id || '',
+          durationSec: Math.round((Number(s.duration) || Number(s.time) || 0)),
+          img: s.img || s.album_pic || ''
+        }))
+        total.value = res.data.data.total || 0
+      }
+      songs.value = []
       typedLists.value = []
     } else {
       const res = await searchByType(searchType.value, keyword.value, page.value, PAGE_SIZE)
@@ -429,6 +469,18 @@ function normalizeSong(song) {
 
 function goAlbum(id) { if (id) router.push(`/album/${id}`) }
 function goArtist(id) { if (id) router.push(`/artist/${id}`) }
+function goArtistSearch(name) {
+  if (name) {
+    keyword.value = name
+    searchType.value = 'song'
+    page.value = 1
+    doSearch()
+  }
+}
+
+function playLyricSong(idx) {
+  player.playList(lyricList.value, idx)
+}
 function goPlaylist(id) { if (id) router.push(`/playlist/${id}`) }
 
 function pad(n) { return String(n).padStart(2, '0') }

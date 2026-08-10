@@ -381,10 +381,14 @@ func handleSearchLyric(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 400, "keyword 参数必填")
 		return
 	}
-	artist := getQueryParam(r, "artist")
-	duration := getQueryParam(r, "duration")
-	album := getQueryParam(r, "album")
-	writeUpstream(w, api.SearchLyric(keyword, artist, duration, album, getCredentials(r)))
+	// 歌词搜索转歌曲搜索：lyrics.kugou.com/v1/search 仅支持按 hash 查歌词，
+	// 不支持关键词搜索歌词内容，因此用歌曲搜索替代
+	resp := api.SearchSongs(keyword, 1, 50, getCredentials(r))
+	if resp.Error != nil {
+		writeError(w, 502, resp.Error.Error())
+		return
+	}
+	writeSuccess(w, api.ParseSearchSongs(resp))
 }
 
 func handleSearchDefault(w http.ResponseWriter, r *http.Request) {
