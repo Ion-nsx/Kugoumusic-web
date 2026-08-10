@@ -525,6 +525,17 @@ func SortOriginalFirst(songs []Song) []Song {
 		}
 		singerBySong[s.Name][s.Singer]++
 	}
+	// 合并包含关系的歌手名："周杰伦" 吸收 "周杰伦小公举" 的计数
+	for _, singers := range singerBySong {
+		for a := range singers {
+			for b := range singers {
+				if a != b && strings.Contains(b, a) {
+					singers[a] += singers[b]
+					singers[b] = 0
+				}
+			}
+		}
+	}
 	primarySinger := map[string]string{}
 	for name, singers := range singerBySong {
 		best, maxN := "", 0
@@ -611,6 +622,17 @@ func SortSongMaps(songs []interface{}) []interface{} {
 			singerBySong[m.name] = map[string]int{}
 		}
 		singerBySong[m.name][m.singer]++
+	}
+	// 合并包含关系的歌手名
+	for _, singers := range singerBySong {
+		for a := range singers {
+			for b := range singers {
+				if a != b && strings.Contains(b, a) {
+					singers[a] += singers[b]
+					singers[b] = 0
+				}
+			}
+		}
 	}
 	primarySinger := map[string]string{}
 	for name, singers := range singerBySong {
