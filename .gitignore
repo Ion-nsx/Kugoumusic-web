@@ -1,0 +1,9 @@
+# 构建产物
+vibe-server
+web/node_modules/
+web/dist/
+web/package-lock.json
+
+# 运行时
+*.log
+.device-guid
