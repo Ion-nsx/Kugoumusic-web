@@ -149,6 +149,148 @@ type CloudMatchInfo struct {
 	HashStd      string `json:"hash_std"`
 	AuthorName   string `json:"author_name"`
 	AudioName    string `json:"audio_name"`
+	SizableCover string `json:"sizable_cover"` // album_info.sizable_cover
+}
+
+// 批量曲库匹配，返回 hash→匹配结果 的映射
+func GetCloudMatchBatch(hashes []string) (map[string]*CloudMatchInfo, error) {
+	if len(hashes) == 0 {
+		return nil, fmt.Errorf("hash 列表为空")
+	}
+
+	// 去重
+	seen := map[string]bool{}
+	uniqueHashes := make([]string, 0, len(hashes))
+	for _, h := range hashes {
+		h = strings.ToLower(h)
+		if h != "" && !seen[h] {
+			seen[h] = true
+			uniqueHashes = append(uniqueHashes, h)
+		}
+	}
+	if len(uniqueHashes) == 0 {
+		return nil, fmt.Errorf("无有效 hash")
+	}
+
+	clienttime := time.Now().Unix()
+
+	data := make([]map[string]interface{}, len(uniqueHashes))
+	for i, h := range uniqueHashes {
+		data[i] = map[string]interface{}{
+			"hash": h,
+		}
+	}
+
+	dataMap := map[string]interface{}{
+		"appid":                     AppID,
+		"clienttime":                clienttime,
+		"clientver":                 ClientVer,
+		"data":                      data,
+		"dfid":                      GetDFID(),
+		"key":                       signParamsKey(strconv.FormatInt(clienttime, 10)),
+		"mid":                       GetMID(),
+		"show_privilege":            0,
+		"show_author_alias":         0,
+		"show_rel_album_audio_info": 0,
+		"show_remarks":              0,
+	}
+
+	resp := SendRequest(&RequestOptions{
+		Method:       "POST",
+		BaseURL:      "http://kmr.service.kugou.com",
+		URL:          "/v2/album_audio/audio",
+		Data:         dataMap,
+		EncryptType:  "android",
+		ClearDefault: true,
+		NoSign:       true,
+		Headers: map[string]string{
+			"x-router":     "kmr.service.kugou.com",
+			"Content-Type": "application/json",
+		},
+	})
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+
+	status, _ := resp.Data["status"].(float64)
+	if status != 1 {
+		return nil, fmt.Errorf("匹配失败")
+	}
+
+	dataArr, ok := resp.Data["data"].([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("匹配结果为空")
+	}
+
+	result := map[string]*CloudMatchInfo{}
+	for i, item := range dataArr {
+		if i >= len(uniqueHashes) {
+			break
+		}
+		hash := uniqueHashes[i]
+
+		// 每个元素可能是候选数组
+		var first map[string]interface{}
+		if arr, ok := item.([]interface{}); ok && len(arr) > 0 {
+			first, _ = arr[0].(map[string]interface{})
+		} else {
+			first, _ = item.(map[string]interface{})
+		}
+		if first == nil {
+			continue
+		}
+
+		info := &CloudMatchInfo{}
+		if v, ok := first["album_audio_id"]; ok {
+			info.AlbumAudioID, _ = toInt64(v)
+		}
+		if audioInfo, ok := first["audio_info"].(map[string]interface{}); ok {
+			if v, ok := audioInfo["audio_id"]; ok {
+				info.AudioID, _ = toInt64(v)
+			}
+			if v, ok := audioInfo["hash"]; ok {
+				info.HashStd, _ = v.(string)
+			}
+		}
+		if info.AudioID == 0 {
+			if v, ok := first["audio_id"]; ok {
+				info.AudioID, _ = toInt64(v)
+			}
+		}
+		if info.HashStd == "" {
+			if v, ok := first["hash"]; ok {
+				info.HashStd, _ = v.(string)
+			}
+		}
+		if v, ok := first["author_name"]; ok {
+			info.AuthorName, _ = v.(string)
+		}
+		if v, ok := first["ori_audio_name"]; ok {
+			info.AudioName, _ = v.(string)
+		}
+		if info.AudioName == "" {
+			if v, ok := first["audio_name"]; ok {
+				info.AudioName, _ = v.(string)
+			}
+		}
+		if v, ok := first["songname"]; ok {
+			if info.AudioName == "" {
+				info.AudioName, _ = v.(string)
+			}
+		}
+		// 提取封面
+		if albumInfo, ok := first["album_info"].(map[string]interface{}); ok {
+			if v, ok := albumInfo["sizable_cover"]; ok {
+				info.SizableCover, _ = v.(string)
+			}
+		}
+
+		if info.AlbumAudioID > 0 || info.AudioID > 0 || info.HashStd != "" {
+			result[hash] = info
+		}
+	}
+
+	return result, nil
 }
 
 func extractMatchInfo(resp *APIResponse) *CloudMatchInfo {
@@ -214,6 +356,12 @@ func extractMatchInfo(resp *APIResponse) *CloudMatchInfo {
 	if info.AudioName == "" {
 		if v, ok := first["songname"]; ok {
 			info.AudioName, _ = v.(string)
+		}
+	}
+	// 提取封面
+	if albumInfo, ok := first["album_info"].(map[string]interface{}); ok {
+		if v, ok := albumInfo["sizable_cover"]; ok {
+			info.SizableCover, _ = v.(string)
 		}
 	}
 

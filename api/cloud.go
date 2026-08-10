@@ -99,6 +99,55 @@ func GetCloudList(userid, token string, page, pageSize int) *APIResponse {
 	}
 	resp.Data = decrypted
 
+	// 对没有封面的文件做批量曲库匹配，补充封面数据
+	if d, ok := decrypted["data"].(map[string]interface{}); ok {
+		listRaw, _ := d["list"].([]interface{})
+		if len(listRaw) > 0 {
+			var unmatchedHashes []string
+			needMatch := map[string]int{} // hash → list index
+			for i, item := range listRaw {
+				m, _ := item.(map[string]interface{})
+				if m == nil {
+					continue
+				}
+				// 已有 album_info 或 authors 的跳过
+				if _, hasAlbumInfo := m["album_info"]; hasAlbumInfo {
+					continue
+				}
+				if _, hasAuthors := m["authors"]; hasAuthors {
+					continue
+				}
+				h, _ := m["hash"].(string)
+				if h != "" {
+					unmatchedHashes = append(unmatchedHashes, h)
+					needMatch[h] = i
+				}
+			}
+
+			if len(unmatchedHashes) > 0 {
+				matches, err := GetCloudMatchBatch(unmatchedHashes)
+				if err == nil {
+					for hash, info := range matches {
+						if info.SizableCover == "" {
+							continue
+						}
+						idx, ok := needMatch[hash]
+						if !ok || idx >= len(listRaw) {
+							continue
+						}
+						item, _ := listRaw[idx].(map[string]interface{})
+						if item == nil {
+							continue
+						}
+						item["album_info"] = map[string]interface{}{
+							"sizable_cover": info.SizableCover,
+						}
+					}
+				}
+			}
+		}
+	}
+
 	return resp
 }
 
