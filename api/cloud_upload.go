@@ -64,8 +64,8 @@ func doBssRequest(method, urlStr string, params map[string]string, body []byte, 
 	client := &http.Client{
 		Timeout: 120 * time.Second,
 		Transport: &http.Transport{
-			DialContext: func(_ context.Context, network, addr string) (net.Conn, error) {
-				return dialer.DialContext(nil, "tcp4", addr)
+			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+				return dialer.DialContext(ctx, "tcp4", addr)
 			},
 		},
 	}
