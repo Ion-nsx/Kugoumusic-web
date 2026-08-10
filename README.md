@@ -6,6 +6,8 @@
 
 Go 后端 + Vue3 前端，单二进制部署，开箱即用
 
+**参考项目**：[MoeKoeMusic](https://github.com/MoeKoeMusic/MoeKoeMusic) · [KuGouMusicApi](https://github.com/MakcRe/KuGouMusicApi)
+
 [![Go](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go)](https://go.dev/)
 [![Vue](https://img.shields.io/badge/Vue-3.5-4FC08D?logo=vue.js)](https://vuejs.org/)
 [![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite)](https://vitejs.dev/)
@@ -112,18 +114,9 @@ PORT=3000 ./vibe-server
 - ✅ **iOS19 毛玻璃设计** — 深色模式 + 响应式布局
 - ❌ **待做** — 云盘、MV/视频、电台、场景/主题、音乐人
 
-<details>
-<summary>点击展开完整功能清单</summary>
-
-详见 [TASKS.md](./TASKS.md)，对齐 MoeKoeMusic 168 个接口模块。
-
-</details>
-
 ## ⚠️ 免责声明
 
 本项目仅供学习和研究使用，请勿用于商业用途。API 版权归酷狗音乐所有。
-
-</details>
 
 ## 📄 License
 
