@@ -401,12 +401,16 @@ func UploadCloudFile(fileData []byte, filename, extendname string, autoMatch boo
 
 	bucket := "musicclound"
 
-	// 文件 MD5 作为 filename
-	if filename == "" {
-		h := md5.Sum(fileData)
-		filename = hex.EncodeToString(h[:])
+	// 文件 MD5 作为 BSS 上传标识（酷狗 BSS 系统要求，不能用原始文件名）
+	h := md5.Sum(fileData)
+	fileMD5 := hex.EncodeToString(h[:])
+
+	// 保留原始文件名用于匹配失败时的显示
+	originalBaseName := filename
+	if originalBaseName == "" {
+		originalBaseName = fileMD5
 	}
-	filename = strings.ToLower(filename)
+	filename = fileMD5
 
 	if extendname == "" {
 		extendname = "mp3"
@@ -431,7 +435,7 @@ func UploadCloudFile(fileData []byte, filename, extendname string, autoMatch boo
 	audioID := int64(0)
 	albumAudioID := int64(0)
 	authorName := ""
-	trackName := filename
+	trackName := originalBaseName
 
 	if matchInfo != nil {
 		if matchInfo.HashStd != "" {
