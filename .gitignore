@@ -7,3 +7,5 @@ web/package-lock.json
 # 运行时
 *.log
 .device-guid
+TASKS.md
+AGENTS.md
