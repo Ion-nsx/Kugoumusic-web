@@ -575,14 +575,15 @@ func SortOriginalFirst(songs []Song) []Song {
 				score -= 5
 			}
 		}
-		// 高质量加分
-		if s.BitRate >= 320 {
-			score += 10
-		} else if s.BitRate > 128 {
-			score += 5
-		}
-		if s.Size > 10*1024*1024 {
-			score += 5
+		// 音质辅助判断：Hi-Res/无损是原版强信号，低码率更可能是翻唱
+		if s.BitRate >= 4000 {
+			score += 30 // Hi-Res 极大概率原版
+		} else if s.BitRate >= 900 {
+			score += 15 // 无损大概率原版
+		} else if s.BitRate >= 320 {
+			score += 5 // 320kbps 加分
+		} else if s.BitRate == 128 && s.Size < 10*1024*1024 {
+			score -= 3 // 128kbps 小文件轻微扣分
 		}
 		items[i] = scoredItem{song: s, score: score}
 	}
