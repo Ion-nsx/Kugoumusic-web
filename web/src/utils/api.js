@@ -194,10 +194,16 @@ export const getCloudURL = (hash, album_audio_id = 0, audio_id = 0, name = '') =
 export const cloudMatch = (hash, album_audio_id = 0) =>
   api.get('/cloud/match', { params: { hash, album_audio_id } })
 // 上传文件到云盘（multipart form，auto_match=1 自动匹配曲库）
-export const cloudUpload = (formData) =>
+// onProgress 可选回调：接收 0-100 的百分比，反映文件上传到后端服务器的进度
+export const cloudUpload = (formData, onProgress) =>
   api.post('/cloud/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
     timeout: 600000,
+    onUploadProgress: (e) => {
+      if (onProgress && e.total) {
+        onProgress(Math.round((e.loaded / e.total) * 100))
+      }
+    },
   })
 
 export default api

@@ -17,8 +17,12 @@
     </div>
 
     <div v-if="uploading" class="upload-progress">
-      <div class="progress-bar"><div class="progress-fill" /></div>
-      <p>正在上传并添加到云盘，请稍候…</p>
+      <div class="progress-bar">
+        <div class="progress-fill" :style="{ width: uploadProgress === -1 ? '100%' : uploadProgress + '%' }"
+             :class="{ indeterminate: uploadProgress === -1 }" />
+      </div>
+      <p v-if="uploadProgress >= 0 && uploadProgress < 100">上传中 {{ uploadProgress }}%</p>
+      <p v-else>正在处理，请稍候…</p>
     </div>
 
     <div v-if="loading && !files.length" class="loading">
@@ -75,6 +79,7 @@ const requireLogin = inject('requireLogin', null)
 const files = ref([])
 const loading = ref(true)
 const uploading = ref(false)
+const uploadProgress = ref(0) // -1=处理中, 0-100=上传进度
 const total = ref(0)
 const page = ref(1)
 const pageSize = 30
@@ -133,12 +138,17 @@ async function handleFileChange(e) {
   if (!file) return
 
   uploading.value = true
+  uploadProgress.value = 0
   try {
     const formData = new FormData()
     formData.append('file', file)
     formData.append('auto_match', '1')
 
-    const res = await cloudUpload(formData)
+    const res = await cloudUpload(formData, (pct) => {
+      uploadProgress.value = pct
+    })
+    // 上传完成，进入处理阶段
+    uploadProgress.value = -1
     if (res.data.status === 1) {
       alert('上传成功！')
       // 跳回第一页刷新列表
@@ -266,14 +276,18 @@ function normalizeCloud(item) {
   background: var(--glass-2); margin: 0 auto; overflow: hidden;
 }
 .progress-fill {
-  height: 100%; width: 100%;
+  height: 100%;
   background: var(--primary, #2CA6F8);
   border-radius: 2px;
-  animation: progressAnim 2s ease-in-out infinite;
+  transition: width .3s ease;
+}
+.progress-fill.indeterminate {
+  width: 40% !important;
+  animation: progressAnim 1.5s ease-in-out infinite;
 }
 @keyframes progressAnim {
   0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+  100% { transform: translateX(350%); }
 }
 
 .s-del {
