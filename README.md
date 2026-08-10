@@ -92,9 +92,6 @@ cd .. && go build -o vibe-server .
 # 概念版（默认）
 ./vibe-server
 
-# 标准版
-VIBE_PLATFORM=std ./vibe-server
-
 # 自定义端口（默认 :8080）
 PORT=3000 ./vibe-server
 ```
