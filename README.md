@@ -1,4 +1,4 @@
-# Kugoumusic-web
+# <img src="https://raw.githubusercontent.com/Ion-nsx/Kugoumusic-web/main/web/public/favicon.svg" width="32" height="32" align="top"> Kugoumusic-web
 
 <div align="center">
 
