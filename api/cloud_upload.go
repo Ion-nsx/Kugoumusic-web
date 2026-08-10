@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"math/rand"
 	"net"
 	"net/http"
@@ -459,7 +458,6 @@ func UploadCloudFile(fileData []byte, filename, extendname string, autoMatch boo
 	name = name + "." + extendname
 
 	// ========== 步骤1 获取上传授权 ==========
-	log.Printf("[cloud_upload:step1] 获取上传授权, filename=%s, userid=%s", filename, userid)
 	loginType := 0
 	if token != "" && userid != "0" {
 		loginType = 1
@@ -484,23 +482,18 @@ func UploadCloudFile(fileData []byte, filename, extendname string, autoMatch boo
 
 	authResp, err := doBssRequest("GET", "https://gateway.kugou.com/bsstrackercdngz/v1/upload/auth", authParams, nil, nil)
 	if err != nil {
-		log.Printf("[cloud_upload:step1] 获取上传授权失败: %v", err)
 		return &APIResponse{Error: fmt.Errorf("获取上传授权失败: %v", err)}
 	}
 	authData, ok := authResp.Data["data"].(map[string]interface{})
 	if !ok {
-		log.Printf("[cloud_upload:step1] 授权响应异常, body=%s", string(authResp.Body))
 		return &APIResponse{Error: fmt.Errorf("授权响应异常: %s", string(authResp.Body))}
 	}
 	authorization, _ := authData["authorization"].(string)
 	if authorization == "" {
-		log.Printf("[cloud_upload:step1] 未获取到 authorization, body=%s", string(authResp.Body))
 		return &APIResponse{Error: fmt.Errorf("未获取到 authorization: %s", string(authResp.Body))}
 	}
-	log.Printf("[cloud_upload:step1] 获取授权成功")
 
 	// ========== 步骤2 初始化分片上传 ==========
-	log.Printf("[cloud_upload:step2] 初始化分片上传")
 	initParams := signBssParams(map[string]string{
 		"bucket":        bucket,
 		"filename":      filename,
@@ -521,13 +514,11 @@ func UploadCloudFile(fileData []byte, filename, extendname string, autoMatch boo
 	initResp, err := doBssRequest("POST", "http://bssulbig.kugou.com/v2/multipart/initiate/music", initParams, nil,
 		map[string]string{"Authorization": authorization})
 	if err != nil {
-		log.Printf("[cloud_upload:step2] 初始化上传失败: %v", err)
 		return &APIResponse{Error: fmt.Errorf("初始化上传失败: %v", err)}
 	}
 
 	initData, ok := initResp.Data["data"].(map[string]interface{})
 	if !ok {
-		log.Printf("[cloud_upload:step2] 初始化响应异常, body=%s", string(initResp.Body))
 		return &APIResponse{Error: fmt.Errorf("初始化响应异常: %s", string(initResp.Body))}
 	}
 
@@ -537,7 +528,6 @@ func UploadCloudFile(fileData []byte, filename, extendname string, autoMatch boo
 	if v, ok := initData["x-bss-filename"].(string); ok && v != "" {
 		bssFileHash = v
 	}
-	log.Printf("[cloud_upload:step2] 初始化成功 upload_id=%s host=%s 秒传=%v", uploadID, externalHost, uploadID == "")
 
 	// 秒传分支：upload_id 为空说明文件已在服务器
 	if uploadID != "" {
@@ -629,7 +619,6 @@ func UploadCloudFile(fileData []byte, filename, extendname string, autoMatch boo
 	}
 
 	// ========== 步骤5 添加文件到云盘 ==========
-	log.Printf("[cloud_upload:step5] 添加文件到云盘, name=%s, bssHash=%s", name, bssFileHash)
 	aesResult, err := PlaylistAESEncrypt(map[string]interface{}{
 		"data": []map[string]interface{}{
 			{
@@ -690,7 +679,6 @@ func UploadCloudFile(fileData []byte, filename, extendname string, autoMatch boo
 	if addResp.Error == nil && len(addResp.Body) > 0 {
 		plainBytes, decErr := PlaylistAESDecrypt(base64.StdEncoding.EncodeToString(addResp.Body), aesResult.Key)
 		if decErr == nil {
-			log.Printf("[cloud_upload:step5] AES 解密成功")
 			var decrypted map[string]interface{}
 			if json.Unmarshal(plainBytes, &decrypted) == nil {
 				addResp.Data = decrypted
@@ -709,16 +697,12 @@ func UploadCloudFile(fileData []byte, filename, extendname string, autoMatch boo
 				}
 			}
 		} else {
-			log.Printf("[cloud_upload:step5] AES 解密失败 (尝试明文解析): %v", decErr)
 			// 尝试明文 JSON
 			var plain map[string]interface{}
 			if json.Unmarshal(addResp.Body, &plain) == nil {
 				addResp.Data = plain
-				log.Printf("[cloud_upload:step5] 明文 JSON 解析成功")
 			}
 		}
-	} else if addResp.Error != nil {
-		log.Printf("[cloud_upload:step5] 请求失败: %v", addResp.Error)
 	}
 
 	return addResp
