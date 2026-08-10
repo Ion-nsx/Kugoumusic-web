@@ -495,8 +495,8 @@ var nonOriginalPatterns = []string{
 	"烟嗓", "烟酒嗓", "伤感版", "新版", "改版",
 }
 
-// IsNonOriginalVersion 判断是否为非原版（DJ/翻唱版等）
-func IsNonOriginalVersion(name, singer string) bool {
+// IsNonOriginalVersion 判断是否为非原版（DJ/翻唱版等），同时检查歌名、歌手、专辑
+func IsNonOriginalVersion(name, singer, album string) bool {
 	lower := strings.ToLower(name)
 	for _, p := range nonOriginalPatterns {
 		if strings.Contains(lower, p) {
@@ -507,6 +507,13 @@ func IsNonOriginalVersion(name, singer string) bool {
 	lowerSinger := strings.ToLower(singer)
 	if strings.Contains(lowerSinger, "dj") || strings.Contains(lowerSinger, "翻唱") {
 		return true
+	}
+	// 专辑名包含 DJ/翻唱等也视为非原版
+	lowerAlbum := strings.ToLower(album)
+	for _, p := range nonOriginalPatterns {
+		if strings.Contains(lowerAlbum, p) {
+			return true
+		}
 	}
 	return false
 }
@@ -555,7 +562,7 @@ func SortOriginalFirst(songs []Song) []Song {
 	for i, s := range songs {
 		score := 100
 		// DJ/Remix 严重扣分
-		if IsNonOriginalVersion(s.Name, s.Singer) {
+		if IsNonOriginalVersion(s.Name, s.Singer, s.Album) {
 			score -= 90
 		}
 		// 主唱加分
@@ -597,11 +604,12 @@ func SortSongMaps(songs []interface{}) []interface{} {
 		return songs
 	}
 
-	// 从 map 中提取歌手/歌名信息
+	// 从 map 中提取歌手/歌名/专辑信息
 	type songMeta struct {
 		idx    int
 		name   string
 		singer string
+		album  string
 	}
 	metas := make([]songMeta, len(songs))
 	for i, s := range songs {
@@ -609,7 +617,8 @@ func SortSongMaps(songs []interface{}) []interface{} {
 		if ok {
 			name, _ := m["name"].(string)
 			singer, _ := m["singer"].(string)
-			metas[i] = songMeta{idx: i, name: name, singer: singer}
+			album, _ := m["album"].(string)
+			metas[i] = songMeta{idx: i, name: name, singer: singer, album: album}
 		} else {
 			metas[i] = songMeta{idx: i}
 		}
@@ -652,7 +661,7 @@ func SortSongMaps(songs []interface{}) []interface{} {
 	scored := make([]scoredIdx, len(songs))
 	for i, m := range metas {
 		score := 100
-		if IsNonOriginalVersion(m.name, m.singer) {
+		if IsNonOriginalVersion(m.name, m.singer, m.album) {
 			score -= 90
 		}
 		if primary, ok := primarySinger[m.name]; ok && primary != "" && m.singer == primary {
