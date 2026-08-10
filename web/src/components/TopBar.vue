@@ -46,6 +46,10 @@
               <span :class="{ on: !darkMode }">浅色</span>
               <span :class="{ on: darkMode }">深色</span>
             </div>
+            <div class="settings-label" style="margin-top:20px">搜索排序</div>
+            <div class="theme-toggle" @click="toggleOriginalFirst">
+              <span :class="{ on: originalFirst }">原版优先</span>
+            </div>
             </div>
           </div>
         </div>
@@ -78,6 +82,7 @@ const player = usePlayerStore()
 const keyword = ref('')
 const showSettings = ref(false)
 const darkMode = ref(localStorage.getItem('vibe_dark') === '1')
+const originalFirst = ref(localStorage.getItem('vibe_original_first') !== '0')
 
 const qualityOptions = [
   { value: '128', label: '标准', tip: '128Kbps' },
@@ -124,6 +129,10 @@ function toggleTheme() {
   darkMode.value = !darkMode.value
   localStorage.setItem('vibe_dark', darkMode.value ? '1' : '0')
   applyTheme()
+}
+function toggleOriginalFirst() {
+  originalFirst.value = !originalFirst.value
+  localStorage.setItem('vibe_original_first', originalFirst.value ? '1' : '0')
 }
 function applyTheme() {
   document.documentElement.setAttribute('data-theme', darkMode.value ? 'dark' : '')

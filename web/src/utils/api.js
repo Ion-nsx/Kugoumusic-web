@@ -39,9 +39,12 @@ export function clearAuth() {
 // 设备注册
 export const registerDevice = () => api.get('/register/dev')
 
-// 搜索（originalFirst 默认 true，传 false 关闭原版优先排序）
-export const searchSongs = (keyword, page = 1, pagesize = 20, originalFirst = true) =>
-  api.get('/search', { params: { keyword, page, pagesize, original_first: originalFirst ? undefined : '0' } })
+// 搜索（原版优先从 localStorage vibe_original_first 读取，默认 true）
+export const searchSongs = (keyword, page = 1, pagesize = 20) => {
+  const of = localStorage.getItem('vibe_original_first')
+  const originalFirst = of === null ? true : of !== '0'
+  return api.get('/search', { params: { keyword, page, pagesize, original_first: originalFirst ? undefined : '0' } })
+}
 
 export const searchSuggest = (keyword) =>
   api.get('/search/suggest', { params: { keyword } })
@@ -56,8 +59,11 @@ export const searchByType = (type, keyword, page = 1, pagesize = 20) =>
   api.get(`/search/${type}`, { params: { keyword, page, pagesize } })
 
 // 歌词搜索
-export const searchLyric = (keyword, artist = '', duration = '', album = '', originalFirst = true) =>
-  api.get('/search/lyric', { params: { keyword, artist, duration, album, original_first: originalFirst ? undefined : '0' } })
+export const searchLyric = (keyword, artist = '', duration = '', album = '') => {
+  const of = localStorage.getItem('vibe_original_first')
+  const originalFirst = of === null ? true : of !== '0'
+  return api.get('/search/lyric', { params: { keyword, artist, duration, album, original_first: originalFirst ? undefined : '0' } })
+}
 
 // 歌曲
 export const getSongURL = (hash, album_id = '', bitrate = 0, quality = '', vip_token = '', vip_type = '') =>

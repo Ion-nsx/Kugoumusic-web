@@ -38,12 +38,7 @@
           <span class="hot-rank" :class="{ 'top': idx < 3 }">{{ idx + 1 }}</span>
           <span class="hot-word">{{ word.word }}</span>
           <span class="hot-heat" v-if="word.hot > 0">{{ formatHeat(word.hot) }}</span>
-      </div>
-      <label class="original-toggle" v-if="searchType === 'song' || searchType === 'lyric'">
-        <input type="checkbox" v-model="originalFirst" @change="doSearch" />
-        <span>原版优先</span>
-      </label>
-    </div>
+        </div>
 
       <!-- 搜索推荐词 -->
       <h2 v-if="defaultWords.length" class="section-title" style="margin-top: 24px">推荐搜索</h2>
@@ -55,6 +50,7 @@
           @click="keyword = w; doSearch()"
         >{{ w }}</span>
       </div>
+    </div>
     </div>
 
     <!-- 搜索结果 -->
@@ -247,7 +243,6 @@ const page = ref(1)
 const total = ref(0)
 const switchingPage = ref(false)
 const jumpPage = ref('')
-const originalFirst = ref(true)
 
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / PAGE_SIZE)))
 
@@ -369,14 +364,14 @@ async function doSearch() {
       songs.value = []
       typedLists.value = []
     } else if (searchType.value === 'song') {
-      const res = await searchSongs(keyword.value, page.value, PAGE_SIZE, originalFirst.value)
+      const res = await searchSongs(keyword.value, page.value, PAGE_SIZE)
       if (res.data.status === 1 && res.data.data) {
         songs.value = res.data.data.songs || res.data.data.lists || []
         total.value = res.data.data.total || 0
       }
       typedLists.value = []
     } else if (searchType.value === 'lyric') {
-      const res = await searchLyric(keyword.value, '', '', '', originalFirst.value)
+      const res = await searchLyric(keyword.value)
       if (res.data.status === 1 && res.data.data) {
         const raw = res.data.data.songs || res.data.data.info || []
         lyricList.value = raw.map((s, i) => ({
@@ -553,12 +548,6 @@ function formatHeat(heat) {
 }
 .search-tab:hover { color: var(--text-1); }
 .search-tab.active { background: var(--primary); color: #FFF; border-color: var(--primary); }
-
-.original-toggle {
-  margin-top: var(--spacing-md); display: inline-flex; align-items: center; gap: 6px;
-  font-size: var(--font-size-xs); color: var(--text-3); cursor: pointer; user-select: none;
-}
-.original-toggle input { accent-color: var(--primary); width: 14px; height: 14px; cursor: pointer; }
 
 .hot-section { max-width: 600px; }
 .section-title { font-size: var(--font-size-xl); font-weight: var(--font-weight-semibold); margin-bottom: var(--spacing-lg); }
