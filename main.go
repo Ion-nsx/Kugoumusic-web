@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -1545,5 +1546,8 @@ func handleCloudUpload(w http.ResponseWriter, r *http.Request) {
 
 	autoMatch := getQueryParam(r, "auto_match") != "0"
 	resp := api.UploadCloudFile(fileData, filename, extendname, autoMatch, creds.UserID, creds.Token)
+	if resp.Error != nil {
+		log.Printf("[cloud_upload] 上传失败: %v (userid=%s)", resp.Error, creds.UserID)
+	}
 	writeUpstream(w, resp)
 }
