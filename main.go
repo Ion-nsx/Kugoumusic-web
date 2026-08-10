@@ -315,7 +315,12 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 502, resp.Error.Error())
 		return
 	}
-	writeSuccess(w, api.ParseSearchSongs(resp))
+	result := api.ParseSearchSongs(resp)
+	// 原版优先：默认开启，传 original_first=0 关闭
+	if getQueryParam(r, "original_first") != "0" {
+		result.Songs = api.SortOriginalFirst(result.Songs)
+	}
+	writeSuccess(w, result)
 }
 
 func handleSearchSuggest(w http.ResponseWriter, r *http.Request) {
@@ -388,7 +393,11 @@ func handleSearchLyric(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 502, resp.Error.Error())
 		return
 	}
-	writeSuccess(w, api.ParseSearchSongs(resp))
+	result := api.ParseSearchSongs(resp)
+	if getQueryParam(r, "original_first") != "0" {
+		result.Songs = api.SortOriginalFirst(result.Songs)
+	}
+	writeSuccess(w, result)
 }
 
 func handleSearchDefault(w http.ResponseWriter, r *http.Request) {

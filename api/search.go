@@ -486,3 +486,43 @@ func toFloat64(v interface{}) float64 {
 		return 0
 	}
 }
+
+// 非原版特征词（DJ/Remix/翻唱/伴奏等），大小写不敏感
+var nonOriginalPatterns = []string{
+	"dj", "remix", "rmx", "翻唱", "cover", "伴奏", "instrumental",
+	"karaoke", "纯音乐", "慢速", "加速", "降调", "升调",
+	"烟嗓", "烟酒嗓", "伤感版", "新版", "改版",
+}
+
+// IsNonOriginalVersion 判断是否为非原版（DJ/翻唱版等）
+func IsNonOriginalVersion(name, singer string) bool {
+	lower := strings.ToLower(name)
+	for _, p := range nonOriginalPatterns {
+		if strings.Contains(lower, p) {
+			return true
+		}
+	}
+	// 歌手名包含 DJ/翻唱也视为非原版
+	lowerSinger := strings.ToLower(singer)
+	if strings.Contains(lowerSinger, "dj") || strings.Contains(lowerSinger, "翻唱") {
+		return true
+	}
+	return false
+}
+
+// SortOriginalFirst 将原版排在前，非原版排在后的稳定排序
+func SortOriginalFirst(songs []Song) []Song {
+	if len(songs) <= 1 {
+		return songs
+	}
+	originals := make([]Song, 0, len(songs))
+	nonOriginals := make([]Song, 0, len(songs))
+	for _, s := range songs {
+		if IsNonOriginalVersion(s.Name, s.Singer) {
+			nonOriginals = append(nonOriginals, s)
+		} else {
+			originals = append(originals, s)
+		}
+	}
+	return append(originals, nonOriginals...)
+}
