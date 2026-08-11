@@ -237,6 +237,8 @@ function onLoadedMetadata() {
     sourceReady.value = true
     showToast(`已切换音质并加载新源：${qualityLabel.value}`)
   }
+  // 换源后 audio 的 playbackRate 会重置为 1，这里重新应用用户设置的倍速
+  if (player.playbackRate !== 1) audioEl.value.playbackRate = player.playbackRate
 }
 // 开始出声时也确认源已就绪（兼容某些浏览器 metadata 回调时序）
 function onSourcePlaying() {
@@ -415,6 +417,14 @@ watch(() => player.isPlaying, async (playing) => {
 // 将 audio 元素注册到 player store，供 seekTo 等使用
 watch(audioEl, (el) => { if (el) player.setAudioEl(el) }, { immediate: true })
 
+// 倍速：换源后 audio 的 playbackRate 会重置为 1，需在 src 变化时重新应用
+watch(() => player.audioUrl, async () => {
+  await nextTick()
+  if (audioEl.value && player.playbackRate !== 1) {
+    audioEl.value.playbackRate = player.playbackRate
+  }
+})
+
 watch(() => player.currentSong, async () => {
   if (audioEl.value && player.isPlaying) {
     await nextTick()
@@ -592,8 +602,8 @@ onBeforeUnmount(() => {
 .progress { display: flex; align-items: center; gap: 12px; width: 100%; max-width: 540px; padding-right: 140px; }
 .time { font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; min-width: 38px; }
 .time.r { text-align: right; }
-.bar { flex: 1; height: 6px; border-radius: 99px; background: var(--surface-3); cursor: pointer; position: relative; transition: height .15s var(--ease); }
-.bar:hover { height: 8px; }
+.bar { flex: 1; height: 8px; border-radius: 99px; background: var(--surface-3); cursor: pointer; position: relative; transition: height .15s var(--ease); }
+.bar:hover { height: 10px; }
 .bar-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 99px; background: var(--primary); width: 0%; }
 .bar-dot {
   position: absolute; top: 50%; width: 11px; height: 11px; border-radius: 50%;

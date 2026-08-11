@@ -118,6 +118,10 @@
 - [x] 右上角设置：默认音质（128/320/flac/高解析Hi-Res）+ 深色模式切换，持久化 localStorage
 - [x] 歌曲列表统一表头 + 7 列对齐（索引/时长右对齐，歌手左对齐）
 - [x] 歌词展示：PlayerBar 迷你歌词行 + LyricView 自动滚动居中
+- [x] LyricView 歌词页 UI 优化：封面模糊背景氛围 + 圆角方形封面 + 播放控制条（进度条拖拽/上下一首/播放暂停）+ 顶部返回按钮
+- [x] 逐字歌词高亮：后端 `/api/lyric` 优先返回 KRC（带字符级时间戳），前端 `parseLyrics` 解析 `<start,dur>字` 标签，当前行逐字渲染（唱到的字上高亮色，未唱保持白色）；无字符标签时按字数均分行级时间兜底
+- [x] 歌词高亮颜色自定义：LyricView 右下角调色板按钮弹出面板（8 预设色 + 自定义取色），持久化 localStorage `vibe_lyric_hl_color`
+- [x] LyricView 交互增强：点击歌词行定位播放、A−/A+ 歌词字号调节（localStorage）、播放模式切换（列表/单曲/随机，图标与 PlayerBar 一致）、倍速循环 1x→1.25x→1.5x→2x（store 导出 playbackRate/setPlaybackRate，换源后 onLoadedMetadata 重新应用）
 - [x] 猜你喜欢页面（列表展示 + 换一批 + 播放全部，更名为猜你喜欢）
 - [x] 歌手列表页（`/api/artist/list` 后端已通，前端 SongSearch 用）
 - [x] 听歌排行页已砍（`/api/user/listen` 数据陈旧不可用，参考项目也仅作推荐卡片用）

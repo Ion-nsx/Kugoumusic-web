@@ -19,6 +19,7 @@ export const usePlayerStore = defineStore('player', () => {
   const lyrics = ref([])
   const currentLyricIndex = ref(0)
   const playMode = ref('loop') // loop, one, shuffle
+  const playbackRate = ref(1)  // 倍速：0.5 / 1 / 1.25 / 1.5 / 2
   const queue = ref([])
   const queueIndex = ref(-1)
   const playError = ref('') // 播放地址获取失败原因（如 VIP 限制）
@@ -160,8 +161,13 @@ export const usePlayerStore = defineStore('player', () => {
     }
     const lines = lrcText.split('\n')
     const parsed = []
+    // 判定是否为 KRC 格式（行时间标签形如 [1234,567] 毫秒+逗号）
+    const isKRC = lines.some(line => /^\[\d+,\d+\]/.test(line))
+
     for (const line of lines) {
-      const match = line.match(/\[(\d{2}):(\d{2})\.(\d{2,3})\](.*)/)
+      // 去掉行尾 \r（KRC/LRC 均为 CRLF 换行）
+      const cleanLine = line.replace(/\r$/, '')
+      const match = cleanLine.match(/\[(\d{2}):(\d{2})\.(\d{2,3})\](.*)/)
       if (match) {
         const min = parseInt(match[1])
         const sec = parseInt(match[2])
@@ -171,6 +177,40 @@ export const usePlayerStore = defineStore('player', () => {
         if (text) {
           parsed.push({ time, text })
         }
+      } else if (isKRC) {
+        // KRC 行： [start,duration]<偏移,时长>字...
+        const krc = cleanLine.match(/^\[(\d+),(\d+)\](.*)/)
+        if (!krc) continue
+        const start = parseInt(krc[1])
+        const lineContent = krc[3]
+        const text = lineContent.replace(/<.*?>/g, '')
+        if (!text.trim()) continue
+
+        const characters = []
+        const charRegex = /<(\d+),(\d+)(?:,\d+)?>([^<]+)/g
+        let m
+        while ((m = charRegex.exec(lineContent)) !== null) {
+          const charStart = start + parseInt(m[1])
+          const charDur = parseInt(m[2])
+          characters.push({
+            char: m[3],
+            startTime: charStart,
+            endTime: charStart + charDur
+          })
+        }
+        // 无字符级标签时按字数均分行级时间
+        if (characters.length === 0) {
+          const dur = parseInt(krc[2])
+          for (let i = 0; i < text.length; i++) {
+            characters.push({
+              char: text[i],
+              startTime: start + (i * dur) / text.length,
+              endTime: start + ((i + 1) * dur) / text.length
+            })
+          }
+        }
+
+        parsed.push({ time: start / 1000, text: text.trim(), characters })
       }
     }
     parsed.sort((a, b) => a.time - b.time)
@@ -188,11 +228,11 @@ export const usePlayerStore = defineStore('player', () => {
   }
 
   // 跳转到指定时间（由外部 audio 元素调用）
-  let _audioEl = null
-  function setAudioEl(el) { _audioEl = el }
+  const audioEl = ref(null)
+  function setAudioEl(el) { audioEl.value = el }
   function seekTo(time) {
     currentTime.value = time
-    if (_audioEl) _audioEl.currentTime = time
+    if (audioEl.value) audioEl.value.currentTime = time
   }
 
   function play() { isPlaying.value = true }
@@ -201,6 +241,11 @@ export const usePlayerStore = defineStore('player', () => {
 
   function setVolume(v) {
     volume.value = Math.max(0, Math.min(1, v))
+  }
+
+  function setPlaybackRate(rate) {
+    playbackRate.value = rate
+    if (audioEl.value) audioEl.value.playbackRate = rate
   }
 
   function toggleMute() { isMuted.value = !isMuted.value }
@@ -509,10 +554,10 @@ export const usePlayerStore = defineStore('player', () => {
 
   return {
     currentSong, audioUrl, isPlaying, currentTime, duration,
-    volume, isMuted, quality, actualQuality, songQualities, lyrics, currentLyricIndex, playMode,
-    queue, queueIndex, hasNext, hasPrev, playError,
+    volume, isMuted, quality, actualQuality, songQualities, lyrics, currentLyricIndex, playMode, playbackRate,
+    queue, queueIndex, hasNext, hasPrev, playError, audioEl,
     likedSongs, likeLoading, history, localFiles,
-    loadSong, play, pause, togglePlay, setVolume, toggleMute,
+    loadSong, play, pause, togglePlay, setVolume, toggleMute, setPlaybackRate,
     next, prev, addToQueue, playNow, playList, playAt, clearQueue, updateCurrentTime, setQuality, switchQuality, seekTo, setAudioEl,
     toggleLike, isLiked, loadLiked, clearLiked, addLocalFiles, removeLocalFile
   }

@@ -181,7 +181,8 @@ func getLyricCommon(hash, keyword, albumID string, creds *Credentials) *APIRespo
 		return &APIResponse{Error: fmt.Errorf("未找到歌词")}
 	}
 
-	for _, format := range []string{"lrc", "krc"} {
+	// 优先取 krc（带字符级时间戳，前端可逐字高亮），lrc 兜底
+	for _, format := range []string{"krc", "lrc"} {
 		dlResp := GetLyricContent(cand.ID, cand.AccessKey, format, creds)
 		if dlResp.Error != nil {
 			return dlResp
