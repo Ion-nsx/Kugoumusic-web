@@ -122,6 +122,7 @@
 - [x] 逐字歌词高亮：后端 `/api/lyric` 优先返回 KRC（带字符级时间戳），前端 `parseLyrics` 解析 `<start,dur>字` 标签，当前行逐字渲染（唱到的字上高亮色，未唱保持白色）；无字符标签时按字数均分行级时间兜底
 - [x] 歌词高亮颜色自定义：LyricView 右下角调色板按钮弹出面板（8 预设色 + 自定义取色），持久化 localStorage `vibe_lyric_hl_color`
 - [x] LyricView 交互增强：点击歌词行定位播放、A−/A+ 歌词字号调节（localStorage）、播放模式切换（列表/单曲/随机，图标与 PlayerBar 一致）、倍速循环 1x→1.25x→1.5x→2x（store 导出 playbackRate/setPlaybackRate，换源后 onLoadedMetadata 重新应用）
+- [x] PlayerBar 进度条 UI 优化：磨砂玻璃轨道（backdrop-filter + 内阴影）+ 缓冲进度层（audio.buffered）+ 已播蓝渐变发光填充 + 毛玻璃圆点（hover/拖动放大）+ 拖动时暂停并显示目标时间 tooltip；音量条同步改为细长轨道（5px 高 110px 宽）
 - [x] 猜你喜欢页面（列表展示 + 换一批 + 播放全部，更名为猜你喜欢）
 - [x] 歌手列表页（`/api/artist/list` 后端已通，前端 SongSearch 用）
 - [x] 听歌排行页已砍（`/api/user/listen` 数据陈旧不可用，参考项目也仅作推荐卡片用）

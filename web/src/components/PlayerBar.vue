@@ -46,10 +46,16 @@
 
       <div class="progress">
         <span class="time" id="curTime">{{ formatTime(player.currentTime) }}</span>
-        <div class="bar" ref="seekBar" @click="seek" @mousedown="startDrag" @touchstart.prevent="startDrag">
-          <div class="bar-fill" :style="{ width: progressPercent + '%' }"></div>
-          <div v-if="climax" class="climax-zone" :style="climaxStyle"></div>
-          <div class="bar-dot" :style="{ left: progressPercent + '%' }"></div>
+        <div class="bar" :class="{ dragging }" ref="seekBar" @click="seek" @mousedown="startDrag" @touchstart.prevent="startDrag">
+          <div class="bar-track">
+            <div class="bar-buffer" :style="{ width: bufferPercent + '%' }"></div>
+            <div class="bar-fill" :style="{ width: progressPercent + '%' }">
+              <i class="bar-glow"></i>
+            </div>
+            <div v-if="climax" class="climax-zone" :style="climaxStyle"></div>
+          </div>
+          <div class="bar-dot" :style="{ left: progressPercent + '%' }"><i></i></div>
+          <div class="bar-hover-time" v-if="hoverTime !== null && dragging" :style="{ left: hoverPos + '%' }">{{ formatTime(hoverTime) }}</div>
         </div>
         <span class="time r">{{ formatTime(player.duration) }}</span>
       </div>
@@ -224,6 +230,7 @@ function pad(n) { return String(n).padStart(2, '0') }
 
 function onTimeUpdate() {
   if (audioEl.value) player.updateCurrentTime(audioEl.value.currentTime)
+  updateBuffer()
 }
 function onLoadedMetadata() {
   if (audioEl.value) player.duration = audioEl.value.duration
@@ -271,6 +278,29 @@ function seekByEvent(e) {
   return ratio * player.duration
 }
 
+// 缓冲进度：取 audio 已缓冲范围，用于进度条"已加载"显示
+const bufferPercent = ref(0)
+function updateBuffer() {
+  const el = audioEl.value
+  if (!el || !el.buffered || el.buffered.length === 0 || player.duration === 0) {
+    bufferPercent.value = 0
+    return
+  }
+  const end = el.buffered.end(el.buffered.length - 1)
+  bufferPercent.value = Math.min(100, (end / player.duration) * 100)
+}
+
+// 悬停时间 tooltip：拖动时显示拖动位置对应的时间
+const hoverTime = ref(null)
+const hoverPos = ref(0)
+function seekHover(e) {
+  if (!seekBar.value || player.duration === 0) return
+  const rect = seekBar.value.getBoundingClientRect()
+  const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width))
+  hoverPos.value = ratio * 100
+  hoverTime.value = ratio * player.duration
+}
+
 // 进度条拖动
 const dragging = ref(false)
 let dragCleanup = null
@@ -282,16 +312,19 @@ function startDrag(e) {
   // 拖动时暂停播放
   wasPlayingBeforeDrag = player.isPlaying
   if (audioEl.value) audioEl.value.pause()
+  seekHover(e)
 
   const time = seekByEvent(e)
   if (time !== null && audioEl.value) audioEl.value.currentTime = time
 
   const onMove = (ev) => {
+    seekHover(ev)
     const t = seekByEvent(ev)
     if (t !== null && audioEl.value) audioEl.value.currentTime = t
   }
   const onUp = () => {
     dragging.value = false
+    hoverTime.value = null
     // 拖动结束后恢复播放
     if (wasPlayingBeforeDrag && audioEl.value) {
       audioEl.value.play().catch(() => {})
@@ -599,21 +632,85 @@ onBeforeUnmount(() => {
   color: var(--primary);
 }
 
-.progress { display: flex; align-items: center; gap: 12px; width: 100%; max-width: 540px; padding-right: 140px; }
+.progress { display: flex; align-items: center; gap: 12px; width: 100%; max-width: 680px; padding-right: 140px; }
 .time { font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; min-width: 38px; }
 .time.r { text-align: right; }
-.bar { flex: 1; height: 8px; border-radius: 99px; background: var(--surface-3); cursor: pointer; position: relative; transition: height .15s var(--ease); }
-.bar:hover { height: 10px; }
-.bar-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 99px; background: var(--primary); width: 0%; }
+.bar {
+  flex: 1;
+  height: 18px;
+  display: flex; align-items: center;
+  cursor: pointer;
+  position: relative;
+  touch-action: none;
+}
+/* 玻璃轨道 */
+.bar-track {
+  position: relative;
+  width: 100%; height: 8px;
+  border-radius: 99px;
+  background: var(--glass-track, rgba(120,128,140,.22));
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.16), inset 0 0 0 0.5px rgba(255,255,255,.06);
+  overflow: hidden;
+  transition: height .15s var(--ease);
+}
+.bar:hover .bar-track { height: 10px; }
+/* 缓冲进度（半透明磨砂） */
+.bar-buffer {
+  position: absolute; left: 0; top: 0; bottom: 0;
+  border-radius: 99px;
+  background: rgba(140,150,165,.22);
+  width: 0%;
+}
+/* 已播进度：渐变 + 发光 */
+.bar-fill {
+  position: absolute; left: 0; top: 0; bottom: 0;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--primary-deep), var(--primary) 60%, #5EC5FF);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--primary) 55%, transparent);
+  width: 0%;
+}
+.bar-glow {
+  position: absolute; right: 0; top: 0; bottom: 0;
+  width: 26px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.5));
+  filter: blur(3px);
+}
+/* 圆点：毛玻璃白球 */
 .bar-dot {
-  position: absolute; top: 50%; width: 11px; height: 11px; border-radius: 50%;
-  background: #fff; border: 2.5px solid var(--primary);
+  position: absolute; top: 50%;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.95);
+  box-shadow: 0 2px 6px rgba(0,0,0,.28), 0 0 0 3.5px color-mix(in srgb, var(--primary) 42%, transparent);
   transform: translate(-50%,-50%) scale(0);
-  transition: transform .15s var(--ease);
+  transition: transform .16s var(--ease), box-shadow .16s var(--ease);
   pointer-events: none;
 }
-.bar:hover .bar-dot { transform: translate(-50%,-50%) scale(1); }
-.bar:hover .bar-fill { background: var(--primary-deep); }
+.bar-dot i {
+  position: absolute; inset: 3px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+.bar:hover .bar-dot, .bar.dragging .bar-dot { transform: translate(-50%,-50%) scale(1); }
+.bar.dragging .bar-dot { box-shadow: 0 3px 10px rgba(0,0,0,.32), 0 0 0 4px color-mix(in srgb, var(--primary) 55%, transparent); }
+.bar:hover .bar-fill { background: linear-gradient(90deg, var(--primary-deep), var(--primary) 55%, #74CEFF); }
+/* 拖动悬停时间提示 */
+.bar-hover-time {
+  position: absolute; top: -30px;
+  transform: translateX(-50%);
+  padding: 3px 8px;
+  border-radius: 8px;
+  background: var(--color-player-bg);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border);
+  font-size: 12px; font-weight: 600;
+  color: var(--text-1);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  white-space: nowrap;
+}
 
 .climax-zone {
   position: absolute; top: 0; bottom: 0; border-radius: 99px;
@@ -626,8 +723,22 @@ onBeforeUnmount(() => {
 .player-right { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
 .vol { display: flex; align-items: center; gap: 10px; }
 .vol svg { width: 18px; height: 18px; stroke: var(--text-2); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.vol .bar { width: 72px; }
+.vol .bar {
+  width: 110px;
+  height: 5px;
+  border-radius: 99px;
+  background: var(--glass-track, rgba(120,128,140,.22));
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.16);
+  flex: none;
+}
+.vol .bar:hover { height: 5px; }
 .vol .bar-fill { background: var(--text-2); }
+.vol .bar-dot {
+  width: 11px; height: 11px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.28);
+}
+.vol .bar-dot i { background: var(--text-2); }
+.vol .bar:hover .bar-dot, .vol .bar.dragging .bar-dot { transform: translate(-50%,-50%) scale(1); }
 .player-right .pbtn svg { width: 19px; height: 19px; }
 .quality-btn { width: auto; padding: 0 6px; }
 .quality-dot {
