@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 )
@@ -39,10 +40,16 @@ func cacheKey(r *http.Request) string {
 	return hex.EncodeToString(h[:])
 }
 
-// 缓存响应中间件
-// 仅缓存 GET 请求，且响应需包含 Cache-Control: max-age
+// 缓存响应中间件（对齐原 Node.js apicache：所有成功的 GET API 响应默认缓存 2 分钟）
+// 仅对 /api/ 路由生效，静态文件不做缓存（已 embed 在内存中）
 func Cache(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// 仅缓存 API 路由
+		if !strings.HasPrefix(r.URL.Path, "/api/") {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		if r.Method != http.MethodGet {
 			next.ServeHTTP(w, r)
 			return
@@ -55,6 +62,7 @@ func Cache(next http.Handler) http.Handler {
 					w.Header().Add(k, vv)
 				}
 			}
+			w.Header().Set("X-Cache", "HIT")
 			w.WriteHeader(item.status)
 			w.Write(item.data)
 			return
@@ -69,10 +77,15 @@ func Cache(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(cw, r)
 
-		// 检查是否设置了缓存时长
-		maxAge := cw.headers.Get("Cache-Control")
-		if maxAge != "" && cw.status < 400 {
-			ttl := 60 * time.Second // 默认 60s
+		// 成功的响应默认缓存 2 分钟
+		if cw.status < 400 {
+			// 检查是否有禁止缓存的标记
+			cacheControl := strings.ToLower(cw.headers.Get("Cache-Control"))
+			if strings.Contains(cacheControl, "no-cache") || strings.Contains(cacheControl, "no-store") {
+				return
+			}
+
+			ttl := 120 * time.Second // 默认 2 分钟
 			DefaultCache.Set(key, cacheItem{
 				data:      cw.body.Bytes(),
 				status:    cw.status,

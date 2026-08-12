@@ -195,12 +195,17 @@ function lineStyle(idx) {
   }
 }
 
-watch(() => player.currentLyricIndex, async () => {
-  await nextTick()
+// 滚动到当前歌词行（页面进入 + 索引变化时复用）
+function scrollToCurrentLine() {
   const el = lineRefs.value[player.currentLyricIndex]
   if (el) {
     el.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }
+}
+
+watch(() => player.currentLyricIndex, async () => {
+  await nextTick()
+  scrollToCurrentLine()
 })
 
 // ===== 逐字高亮：按当前播放时间计算该行高亮进度 =====
@@ -212,7 +217,12 @@ function syncPlayTime() {
   playMs.value = t
   rafId = requestAnimationFrame(syncPlayTime)
 }
-onMounted(() => { rafId = requestAnimationFrame(syncPlayTime) })
+onMounted(async () => {
+  rafId = requestAnimationFrame(syncPlayTime)
+  // 进入页面时立刻滚动到当前播放的歌词行
+  await nextTick()
+  setTimeout(scrollToCurrentLine, 80)
+})
 onBeforeUnmount(() => { cancelAnimationFrame(rafId) })
 
 // 该字符是否已唱到（当前播放时间 >= 字符开始时间）
