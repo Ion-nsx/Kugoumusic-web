@@ -3,11 +3,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: vibe-server
-    container_name: vibe-server
+    image: kugoumusic-web
+    container_name: kugoumusic-web
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "28080:8080"
     environment:
       - PORT=8080
       - VIBE_GUID_FILE=/data/.device-guid
