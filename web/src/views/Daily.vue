@@ -24,7 +24,7 @@
           <img v-if="song.img" :src="song.img" :alt="song.name" loading="lazy" />
           <svg v-else viewBox="0 0 24 24"><path d="M8.5 17.5a3.5 3.5 0 1 1-1-2.47l8-2.2V7.4L6.8 10.4a4.5 4.5 0 1 0 1.2 2.9l8-2.2V4.4a1 1 0 0 1 1.3-.95l3.2 1A1 1 0 0 1 21 5.4v8.1a4.5 4.5 0 1 0-1.3-3.2v3.9l-11.2 3.3Z"/></svg>
         </div>
-        <div class="s-name">{{ song.name }}<span v-if="idx === 0" class="tag">独家</span></div>
+        <div class="s-name">{{ song.name }}</div>
         <div class="s-album link" @click.stop="goAlbum(song.album_id)">{{ song.album }}</div>
         <div class="s-artist link" @click.stop="goArtist(song.singer_id)">{{ song.singer }}</div>
         <button class="like" :class="{ liked: player.isLiked(song) }" @click.stop="player.toggleLike(song)">
