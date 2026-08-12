@@ -100,6 +100,39 @@ PORT=3000 ./vibe-server
 
 浏览器打开 `http://localhost:8080`
 
+## 🐳 Docker 部署
+
+### 方式一：阿里云镜像（推荐，一条命令）
+
+```bash
+# 1. 登录阿里云个人镜像仓库
+docker login --username=aliyun2636527045 crpi-kp29jych6uiyt9ea.cn-shanghai.personal.cr.aliyuncs.com
+
+# 2. 启动（自动拉取镜像 + 持久卷 + 健康检查 + 自动重启）
+docker compose up -d
+```
+
+浏览器打开 `http://localhost:8080`。
+
+容器内 `/data` 为持久卷（设备标识 `.device-guid`），容器重建/重启后保持同一设备身份，登录 token 不失效。
+
+### 方式二：本地构建镜像
+
+```bash
+cd web && npm install && npm run build   # 构建前端
+cd .. && docker build -t vibe-server .    # 多阶段构建（node → go → alpine）
+docker compose -f docker-compose.dev.yml up -d
+```
+
+### 常用命令
+
+```bash
+docker compose down        # 停止并删除容器（持久卷保留）
+docker compose restart     # 重启
+docker compose logs -f     # 查看日志
+docker volume ls           # 数据卷列表
+```
+
 ## 🎯 功能状态
 
 - ✅ **基础 & 设备** — 设备注册、图片代理

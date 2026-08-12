@@ -1,0 +1,23 @@
+services:
+  vibe:
+    # 阿里云个人镜像仓库（推送到 nsx-images/nsx-repositories）
+    image: crpi-kp29jych6uiyt9ea.cn-shanghai.personal.cr.aliyuncs.com/nsx-images/nsx-repositories:latest
+    container_name: vibe-server
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - VIBE_GUID_FILE=/data/.device-guid
+      - TZ=Asia/Shanghai
+    volumes:
+      # 设备标识持久化：容器重建后保持同一设备（mid 与登录 token 绑定）
+      - vibe-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  vibe-data:

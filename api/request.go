@@ -86,17 +86,27 @@ var (
 )
 
 // 设备 GUID 持久化文件：保证服务重启后设备标识不变（mid 与登录 token 绑定，变了会导致 VIP 播放 20018/不匹配）
+// Docker 部署时可用环境变量 VIBE_GUID_FILE 覆盖为挂载卷路径，保持容器重建后设备标识一致
 const guidFile = "/root/X-music/.device-guid"
+
+// 获取 GUID 持久化文件路径（支持环境变量覆盖，默认固定路径）
+func guidFilePath() string {
+	if p := os.Getenv("VIBE_GUID_FILE"); p != "" {
+		return p
+	}
+	return guidFile
+}
 
 // 读取或创建持久化 GUID（重启后沿用同一设备标识）
 func loadOrCreateGUID() string {
-	if b, err := os.ReadFile(guidFile); err == nil {
+	path := guidFilePath()
+	if b, err := os.ReadFile(path); err == nil {
 		if s := strings.TrimSpace(string(b)); s != "" {
 			return s
 		}
 	}
 	guid := newUUID()
-	_ = os.WriteFile(guidFile, []byte(guid), 0600)
+	_ = os.WriteFile(path, []byte(guid), 0600)
 	return guid
 }
 
