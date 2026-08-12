@@ -7,7 +7,7 @@
     <div class="main">
       <TopBar />
 
-      <div class="content">
+      <div class="content" ref="contentRef">
         <router-view />
       </div>
     </div>
@@ -20,7 +20,8 @@
 </template>
 
 <script setup>
-import { ref, provide, onMounted, watch } from 'vue'
+import { ref, provide, onMounted, watch, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 import Sidebar from './components/Sidebar.vue'
 import TopBar from './components/TopBar.vue'
 import PlayerBar from './components/PlayerBar.vue'
@@ -31,8 +32,10 @@ import { registerDevice } from './utils/api'
 
 const auth = useAuthStore()
 const player = usePlayerStore()
+const router = useRouter()
 const showLogin = ref(false)
 const loginReason = ref('')
+const contentRef = ref(null)
 
 provide('showLogin', showLogin)
 provide('loginReason', loginReason)
@@ -79,6 +82,23 @@ onMounted(async () => {
   } else {
     auth.applyAuth()
   }
+})
+
+// 列表页滚动位置保持：离开时记录，回来时恢复
+const scrollCache = {}
+router.beforeEach((to, from) => {
+  if (contentRef.value && from.fullPath) {
+    scrollCache[from.fullPath] = contentRef.value.scrollTop
+  }
+})
+router.afterEach((to) => {
+  nextTick(() => {
+    setTimeout(() => {
+      if (contentRef.value) {
+        contentRef.value.scrollTop = scrollCache[to.fullPath] || 0
+      }
+    }, 30)
+  })
 })
 </script>
 

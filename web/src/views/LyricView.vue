@@ -199,14 +199,29 @@ function lineStyle(idx) {
 function scrollToCurrentLine() {
   const el = lineRefs.value[player.currentLyricIndex]
   if (el) {
-    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    el.scrollIntoView({ behavior: 'instant', block: 'center' })
   }
 }
 
+// 歌词加载完成后自动滚动到当前行
+watch(() => player.lyrics.length, (len) => {
+  if (len > 0) {
+    nextTick(scrollToCurrentLine)
+  }
+})
+
 watch(() => player.currentLyricIndex, async () => {
   await nextTick()
-  scrollToCurrentLine()
+  // 播放中平滑滚动，非播放中（手动点击跳歌词行后）也平滑
+  scrollIntoViewSmooth()
 })
+
+function scrollIntoViewSmooth() {
+  const el = lineRefs.value[player.currentLyricIndex]
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+}
 
 // ===== 逐字高亮：按当前播放时间计算该行高亮进度 =====
 const playMs = ref(0)
@@ -219,9 +234,9 @@ function syncPlayTime() {
 }
 onMounted(async () => {
   rafId = requestAnimationFrame(syncPlayTime)
-  // 进入页面时立刻滚动到当前播放的歌词行
+  // 进入页面时立刻滚动到当前播放的歌词行（歌词已加载时用 instant，瞬间到位）
   await nextTick()
-  setTimeout(scrollToCurrentLine, 80)
+  scrollToCurrentLine()
 })
 onBeforeUnmount(() => { cancelAnimationFrame(rafId) })
 
