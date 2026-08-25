@@ -702,7 +702,9 @@ func handleAudioProxy(w http.ResponseWriter, r *http.Request) {
 	req.Header.Set("User-Agent", api.UserAgent)
 	req.Header.Set("Referer", "https://www.kugou.com/")
 
-	client := &http.Client{Timeout: 120 * time.Second}
+	// 复用全局连接池；不设整体 Timeout（长歌播放 io.Copy 可能超过任意时长），
+	// 建连/响应头由 SharedTransport 的 ResponseHeaderTimeout(30s) 兜底
+	client := &http.Client{Transport: api.SharedTransport}
 	resp, err := client.Do(req)
 	if err != nil {
 		writeError(w, 502, "音频代理请求失败")

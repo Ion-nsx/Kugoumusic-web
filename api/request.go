@@ -22,6 +22,24 @@ import (
 
 // ========== 平台配置 ==========
 // 标准版 (appid=1005) 与概念版 (lite, appid=3116) 共用同一套签名算法，仅盐值与 appid/clientver 不同。
+
+// 全局共享 HTTP Transport：复用连接池 + 空闲超时回收。
+// 注意：绝不能在每次请求时新建 &http.Transport{}——其 IdleConnTimeout 默认 0（无上限），
+// 孤儿 Transport 池里的 keep-alive 连接永不超时关闭，会导致内存/句柄持续增长（听歌越久越占内存）。
+var SharedTransport = &http.Transport{
+	DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+		// 本机无 IPv6，强制使用 IPv4，避免解析到 IPv6 地址后连接卡死
+		dialer := &net.Dialer{Timeout: 15 * time.Second}
+		return dialer.DialContext(ctx, "tcp4", addr)
+	},
+	MaxIdleConns:          100, // 全局空闲连接上限
+	MaxIdleConnsPerHost:   10,  // 单主机空闲连接上限
+	IdleConnTimeout:       90 * time.Second,
+	TLSHandshakeTimeout:   10 * time.Second,
+	ResponseHeaderTimeout: 30 * time.Second,
+	ExpectContinueTimeout: 1 * time.Second,
+}
+
 const (
 	StdAppIDInt     = 1005
 	StdClientVerInt = 20489
@@ -211,16 +229,9 @@ type APIResponse struct {
 
 // 发送请求（自动注入设备参数与签名）
 func SendRequest(opts *RequestOptions) *APIResponse {
-	// 本机无 IPv6，强制使用 IPv4，避免解析到 IPv6 地址后连接卡死
-	dialer := &net.Dialer{Timeout: 15 * time.Second}
-	transport := &http.Transport{
-		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-			return dialer.DialContext(ctx, "tcp4", addr)
-		},
-	}
 	client := &http.Client{
 		Timeout:   30 * time.Second,
-		Transport: transport,
+		Transport: SharedTransport,
 	}
 	if opts.Timeout > 0 {
 		client.Timeout = opts.Timeout

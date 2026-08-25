@@ -2,7 +2,6 @@ package api
 
 import (
 	"bytes"
-	"context"
 	"crypto/md5"
 	"encoding/base64"
 	"encoding/hex"
@@ -10,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
-	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -60,14 +58,9 @@ func doBssRequest(method, urlStr string, params map[string]string, body []byte, 
 		req.Header.Set(k, v)
 	}
 
-	dialer := &net.Dialer{Timeout: 15 * time.Second}
 	client := &http.Client{
-		Timeout: 120 * time.Second,
-		Transport: &http.Transport{
-			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-				return dialer.DialContext(ctx, "tcp4", addr)
-			},
-		},
+		Timeout:   120 * time.Second,
+		Transport: SharedTransport,
 	}
 
 	resp, err := client.Do(req)

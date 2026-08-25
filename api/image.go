@@ -79,7 +79,7 @@ func ProxyPlaylistImage(playlistID, size string) ([]byte, string, error) {
 
 // 通用图片获取
 func fetchImage(url string) ([]byte, string, error) {
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := &http.Client{Timeout: 10 * time.Second, Transport: SharedTransport}
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
