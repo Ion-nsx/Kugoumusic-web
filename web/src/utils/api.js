@@ -193,6 +193,17 @@ export function imgUrl(url, size = 480) {
   return String(url).replace('{size}', size)
 }
 
+// 音频 URL 转可播放地址：
+// 酷狗音频 CDN 不支持 https，HTTPS 页面直连 http 音频会被浏览器以「混合内容」拦截
+// （表现为播放器进度永远为 0），此时改走后端同源代理转发音频流。
+export function playableUrl(url) {
+  if (!url) return url
+  if (window.location.protocol === 'https:' && url.startsWith('http://')) {
+    return `/api/proxy/audio?url=${encodeURIComponent(url)}`
+  }
+  return url
+}
+
 // ===== 云盘 =====
 // 获取云盘文件列表
 export const getCloudList = (page = 1, pagesize = 30) =>

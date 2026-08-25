@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -59,6 +60,9 @@ func main() {
 
 	// ===== 图片代理 =====
 	mux.HandleFunc("/api/images", handleImageProxy)
+
+	// ===== 音频代理（HTTPS 下 http 音频被浏览器拦截，走同源代理） =====
+	mux.HandleFunc("/api/proxy/audio", handleAudioProxy)
 
 	// ===== 推荐 & 歌单 =====
 	mux.HandleFunc("/api/everyday/recommend", handleEverydayRecommend)
@@ -669,6 +673,64 @@ func handleImageProxy(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", ct)
 	w.Header().Set("Cache-Control", "public, max-age=86400")
 	w.Write(data)
+}
+
+// 音频代理：酷狗音频 CDN 不支持 https，HTTPS 页面直连 http 音频会被浏览器
+// 以「混合内容」拦截导致无法播放（进度永远为 0）。此接口将音频流经后端同源转发，
+// 同时透传 Range 头保证浏览器可拖动进度条 seek。
+func handleAudioProxy(w http.ResponseWriter, r *http.Request) {
+	urlStr := getQueryParam(r, "url")
+	if urlStr == "" {
+		writeError(w, 400, "url 参数必填")
+		return
+	}
+	u, err := url.Parse(urlStr)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || !isAudioCDNHost(u.Hostname()) {
+		writeError(w, 400, "url 无效或域名不在允许列表")
+		return
+	}
+
+	req, err := http.NewRequestWithContext(r.Context(), "GET", urlStr, nil)
+	if err != nil {
+		writeError(w, 500, err.Error())
+		return
+	}
+	// 透传 Range 头（音频 seek 必需）
+	if rh := r.Header.Get("Range"); rh != "" {
+		req.Header.Set("Range", rh)
+	}
+	req.Header.Set("User-Agent", api.UserAgent)
+	req.Header.Set("Referer", "https://www.kugou.com/")
+
+	client := &http.Client{Timeout: 120 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		writeError(w, 502, "音频代理请求失败")
+		return
+	}
+	defer resp.Body.Close()
+
+	// 透传关键响应头（Content-Type/Content-Length/Content-Range/Accept-Ranges）
+	w.Header().Set("Content-Type", resp.Header.Get("Content-Type"))
+	w.Header().Set("Accept-Ranges", resp.Header.Get("Accept-Ranges"))
+	if cr := resp.Header.Get("Content-Range"); cr != "" {
+		w.Header().Set("Content-Range", cr)
+	}
+	if cl := resp.Header.Get("Content-Length"); cl != "" {
+		w.Header().Set("Content-Length", cl)
+	}
+	w.Header().Set("Cache-Control", "public, max-age=3600")
+	w.WriteHeader(resp.StatusCode)
+	io.Copy(w, resp.Body)
+}
+
+// 音频域名白名单：酷狗系 CDN（含云盘 fs 域名），防止被当作开放代理滥用
+func isAudioCDNHost(host string) bool {
+	host = strings.ToLower(host)
+	if host == "kugou.com" {
+		return true
+	}
+	return strings.HasSuffix(host, ".kugou.com")
 }
 
 // ===== 推荐 & 歌单 =====

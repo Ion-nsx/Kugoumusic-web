@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useAuthStore } from './auth'
 import { getSongURL, getPrivilegeLite, getLyric, getSongQualities, setAuth, clearAuth, imgUrl,
-  getUserPlaylist, getPlaylistSongs, addPlaylistTracks, deletePlaylistTracks, getCloudURL } from '../utils/api'
+  getUserPlaylist, getPlaylistSongs, addPlaylistTracks, deletePlaylistTracks, getCloudURL, playableUrl } from '../utils/api'
 
 export const usePlayerStore = defineStore('player', () => {
   const currentSong = ref(null)
@@ -51,7 +51,7 @@ export const usePlayerStore = defineStore('player', () => {
 
     if (song.localUrl) {
       // 本地文件直接播放，跳过在线接口
-      audioUrl.value = song.localUrl
+      audioUrl.value = playableUrl(song.localUrl)
       return
     }
     if (String(song.id || '').startsWith('local_')) {
@@ -68,7 +68,7 @@ export const usePlayerStore = defineStore('player', () => {
       if (song.cloudFile) {
         const urlRes = await getCloudURL(song.id, song.cloudAlbumAudioID || 0, song.cloudAudioID || 0, song.name || '')
         if (urlRes.data.status === 1 && urlRes.data.data && urlRes.data.data.url) {
-          audioUrl.value = urlRes.data.data.url
+          audioUrl.value = playableUrl(urlRes.data.data.url)
           actualQuality.value = 'cloud'
         } else {
           audioUrl.value = ''
@@ -82,7 +82,7 @@ export const usePlayerStore = defineStore('player', () => {
         audioUrl.value = ''
         playError.value = res.data.error || '该歌曲暂无法播放'
       } else if (res.data.status === 1 && res.data.data) {
-        audioUrl.value = res.data.data.url
+        audioUrl.value = playableUrl(res.data.data.url)
         actualQuality.value = res.data.data.quality || quality.value
       } else {
         audioUrl.value = ''
@@ -123,7 +123,7 @@ export const usePlayerStore = defineStore('player', () => {
       const auth = useAuthStore()
       const res = await getSongURL(currentSong.value.id, currentSong.value.album_id || '', 0, q, auth.vipToken, auth.vipType)
       if (res.data.status === 1 && res.data.data && res.data.data.url) {
-        audioUrl.value = res.data.data.url
+        audioUrl.value = playableUrl(res.data.data.url)
         actualQuality.value = res.data.data.quality || q
         playError.value = ''
         return true
@@ -143,7 +143,7 @@ export const usePlayerStore = defineStore('player', () => {
       const auth = useAuthStore()
       const res = await getSongURL(currentSong.value.id, currentSong.value.album_id || '', 0, q, auth.vipToken, auth.vipType)
       if (res.data.status === 1 && res.data.data && res.data.data.url) {
-        audioUrl.value = res.data.data.url
+        audioUrl.value = playableUrl(res.data.data.url)
         actualQuality.value = res.data.data.quality || q
         playError.value = ''
         return true
