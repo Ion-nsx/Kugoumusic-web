@@ -50,6 +50,13 @@ func Cache(next http.Handler) http.Handler {
 			return
 		}
 
+		// 流式接口（音频代理）不做缓存：整个音频流会被 cacheWriter 缓冲进内存并
+		// 留存整个 TTL，导致每播放一首歌内存涨几十 MB 且过期后不主动释放
+		if strings.HasPrefix(r.URL.Path, "/api/proxy/audio") {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		if r.Method != http.MethodGet {
 			next.ServeHTTP(w, r)
 			return
