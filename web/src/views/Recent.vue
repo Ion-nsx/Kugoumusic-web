@@ -30,6 +30,7 @@
           <svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.5-8.7C1 9 3 5.5 6.5 5.5c2 0 3.6 1.2 4.5 3 .9-1.8 2.5-3 4.5-3 3.5 0 5.5 3.5 4 6.8C18.5 16.4 12 21 12 21Z"/></svg>
         </button>
         <div class="dur">{{ fmtLocalTime(song.played_at) }}</div>
+        <SongMenu :song="song" />
       </div>
     </div>
 

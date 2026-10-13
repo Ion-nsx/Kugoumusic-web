@@ -52,7 +52,7 @@
             @click="playSong(rank, song, sIdx)">
             <span class="rsi-idx" :class="{ top: sIdx < 3 }">{{ sIdx + 1 }}</span>
             <div class="rsi-cover">
-              <img v-if="song.img" :src="song.img" loading="lazy" />
+              <img v-if="song.img" :src="song.img" :alt="song.name" loading="lazy" />
               <div class="rsi-play-hover">
                 <svg viewBox="0 0 24 24" width="14" height="14"><polygon points="6,3 18,12 6,21" fill="#fff"/></svg>
               </div>

@@ -1404,7 +1404,12 @@ func handleCaptchaSent(w http.ResponseWriter, r *http.Request) {
 // ===== 用户 & VIP =====
 
 func handleUserDetail(w http.ResponseWriter, r *http.Request) {
-	resp := api.GetUserDetail(getCredentials(r))
+	creds := getCredentials(r)
+	if creds.Token == "" {
+		writeError(w, 401, "请先登录")
+		return
+	}
+	resp := api.GetUserDetail(creds)
 	if resp.Error != nil {
 		writeError(w, 502, resp.Error.Error())
 		return

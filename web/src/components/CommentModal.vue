@@ -1,6 +1,9 @@
 <template>
+  <!-- Teleport 到 body：模态不能留在播放栏（backdrop-filter 元素）内部，
+       否则 position:fixed 的相对包含块会变成播放栏小盒子，弹窗会跑偏 -->
+  <Teleport to="body">
   <div class="modal-overlay" @click.self="$emit('close')">
-    <div class="comment-modal">
+    <div class="comment-modal lg-glass-strong">
       <div class="cm-header">
         <div class="cm-title">
           <span>{{ title }}</span>
@@ -67,6 +70,7 @@
       </div>
     </div>
   </div>
+  </Teleport>
 </template>
 
 <script setup>
@@ -234,7 +238,8 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
 }
 
 .comment-modal {
@@ -243,12 +248,10 @@ onMounted(() => {
   height: 85vh;
   display: flex;
   flex-direction: column;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  /* 液态玻璃材质来自全局 .lg-glass-strong */
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-lg);
   overflow: hidden;
-  animation: modal-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: modal-in 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 @keyframes modal-in {
   from { opacity: 0; transform: scale(0.96) translateY(10px); }

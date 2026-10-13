@@ -1,5 +1,5 @@
 <template>
-  <footer class="player" :class="{ playing: player.isPlaying }" v-if="player.currentSong">
+  <footer class="player lg-glass" :class="{ playing: player.isPlaying }" v-if="player.currentSong">
     <div class="now-playing">
       <div class="now-cover">
         <img v-if="player.currentSong.img" :src="player.currentSong.img" :alt="player.currentSong.name" />
@@ -55,7 +55,7 @@
             <div v-if="climax" class="climax-zone" :style="climaxStyle"></div>
           </div>
           <div class="bar-dot" :style="{ left: progressPercent + '%' }"><i></i></div>
-          <div class="bar-hover-time" v-if="hoverTime !== null && dragging" :style="{ left: hoverPos + '%' }">{{ formatTime(hoverTime) }}</div>
+          <div class="bar-hover-time lg-glass-thin" v-if="hoverTime !== null && dragging" :style="{ left: hoverPos + '%' }">{{ formatTime(hoverTime) }}</div>
         </div>
         <span class="time r">{{ formatTime(player.duration) }}</span>
       </div>
@@ -79,7 +79,7 @@
     </div>
 
     <!-- 音质选择弹层 -->
-    <div class="queue-pop quality-pop" v-if="showQuality" @click.stop>
+    <div class="queue-pop quality-pop lg-glass-strong" v-if="showQuality" @click.stop>
       <div class="queue-head">
         <span>音质选择</span>
         <button class="queue-close" @click="showQuality = false">✕</button>
@@ -114,7 +114,7 @@
     <div class="toast" v-if="toast">{{ toast }}</div>
 
     <!-- 播放队列弹层 -->
-    <div class="queue-pop" v-if="showQueue">
+    <div class="queue-pop lg-glass-strong" v-if="showQueue">
       <div class="queue-head">
         <span>播放队列</span>
         <button class="queue-close" @click="showQueue = false">✕</button>
@@ -525,10 +525,15 @@ onBeforeUnmount(() => {
   left: var(--sidebar-width);
   right: 0; bottom: 0;
   height: var(--player-height);
-  background: var(--color-player-bg);
-  backdrop-filter: blur(28px) saturate(1.7);
-  -webkit-backdrop-filter: blur(28px) saturate(1.7);
-  border-top: 1px solid var(--border);
+  /* 液态玻璃：更透的折射 + 顶部镜面棱线 + 向上投影（让贴底的播放器"浮"起来） */
+  background: var(--lg-player-bg);
+  -webkit-backdrop-filter: blur(38px) saturate(190%) brightness(1.05);
+  backdrop-filter: blur(38px) saturate(190%) brightness(1.05);
+  border: none;
+  box-shadow:
+    inset 0 1px 0 var(--lg-specular),
+    inset 0 -1px 0 var(--lg-refract),
+    var(--lg-shadow-up);
   display: grid;
   grid-template-columns: 1fr 2fr 1fr;
   align-items: center;
@@ -569,7 +574,7 @@ onBeforeUnmount(() => {
   width: 34px; height: 34px; border-radius: 50%; border: none; background: transparent;
   cursor: pointer; color: var(--text-2); display: grid; place-items: center; transition: all .15s;
 }
-.mini-btn:hover { background: var(--surface-3); color: var(--text-1); }
+.mini-btn:hover { background: var(--hover); color: var(--text-1); }
 .mini-btn svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .mini-btn.liked { color: var(--like); }
 .mini-btn.liked svg { fill: currentColor; }
@@ -590,7 +595,7 @@ onBeforeUnmount(() => {
   cursor: pointer; color: var(--text-2); display: grid; place-items: center;
   transition: all .15s var(--ease);
 }
-.pbtn:hover { color: var(--text-1); background: var(--surface-3); transform: scale(1.06); }
+.pbtn:hover { color: var(--text-1); background: var(--hover); transform: scale(1.06); }
 .pbtn svg { width: 19px; height: 19px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .pbtn-main {
   width: 50px; height: 50px; border-radius: 50%; border: none; cursor: pointer;
@@ -611,19 +616,14 @@ onBeforeUnmount(() => {
   cursor: pointer;
   transition: color .2s;
   user-select: none;
-  line-height: 1;
+  /* 行高不能设成 1：行盒高度=字号会把 g/y/p 等下伸部裁掉，底部显示不全 */
+  line-height: 1.5;
   width: 280px;
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   flex-shrink: 0;
-}
-.mini-lyric.active {
-  color: var(--text-3);
-}
-.mini-lyric:hover {
-  color: var(--primary);
 }
 .mini-lyric.active {
   color: var(--text-3);
@@ -701,10 +701,8 @@ onBeforeUnmount(() => {
   position: absolute; top: -30px;
   transform: translateX(-50%);
   padding: 3px 8px;
-  border-radius: 8px;
-  background: var(--color-player-bg);
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--border);
+  border-radius: 10px;
+  /* 液态玻璃材质来自全局 .lg-glass-thin */
   font-size: 12px; font-weight: 600;
   color: var(--text-1);
   font-variant-numeric: tabular-nums;
@@ -761,7 +759,7 @@ onBeforeUnmount(() => {
   padding: 10px 12px; border-radius: var(--r-sm);
   cursor: pointer; transition: background .15s;
 }
-.quality-item:hover { background: var(--surface-3); }
+.quality-item:hover { background: var(--hover); }
 .quality-item.on { background: var(--primary-soft); }
 .quality-item.on .q-name { color: var(--primary-deep); font-weight: 700; }
 .quality-item .q-tip { font-size: 11px; color: var(--text-3); }
@@ -793,10 +791,8 @@ onBeforeUnmount(() => {
   position: absolute;
   right: 28px; bottom: calc(var(--player-height) + 10px);
   width: 360px; max-height: 360px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  box-shadow: var(--shadow-lg);
+  /* 液态玻璃材质来自全局 .lg-glass-strong */
+  border-radius: var(--radius-xl);
   display: flex; flex-direction: column;
   z-index: 30;
   overflow: hidden;
@@ -814,7 +810,7 @@ onBeforeUnmount(() => {
   padding: 8px 10px; border-radius: var(--r-sm);
   cursor: pointer; transition: background .15s;
 }
-.queue-item:hover { background: var(--surface-3); }
+.queue-item:hover { background: var(--hover); }
 .queue-item.on .q-idx { color: var(--primary); font-weight: 700; }
 .queue-item.on .q-name { color: var(--primary-deep); }
 .q-idx { width: 20px; text-align: center; font-size: 12px; color: var(--text-3); flex-shrink: 0; }

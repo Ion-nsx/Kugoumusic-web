@@ -31,7 +31,7 @@ Go 后端 + Vue3 前端，单二进制部署，开箱即用
 - 🚀 **单二进制** — 前端 SPA 嵌入 Go binary，`./vibe-server` 一键启动
 
 <div align="center">
-  <img src="./demo.png" alt="Kugoumusic-web Demo" width="800" />
+  <img src="./docs/demo.png" alt="Kugoumusic-web Demo" width="800" />
 </div>
 
 ## 🏗️ 技术栈

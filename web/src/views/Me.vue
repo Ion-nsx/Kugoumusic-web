@@ -49,7 +49,6 @@
             <div class="pl-name">{{ pl.name }}</div>
             <div class="pl-count">{{ pl.count || 0 }} 首</div>
           </div>
-          <span class="pl-del" title="删除歌单" @click.stop="doDeletePlaylist(pl)">🗑</span>
           <span class="pl-arrow">›</span>
         </div>
       </div>
@@ -103,7 +102,7 @@ import { computed, inject, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { usePlayerStore } from '../stores/player'
-import { getUserPlaylist, createPlaylist, deletePlaylist, getUserFollow, followSinger, imgUrl } from '../utils/api'
+import { getUserPlaylist, createPlaylist, getUserFollow, followSinger, imgUrl } from '../utils/api'
 
 const auth = useAuthStore()
 const player = usePlayerStore()
@@ -201,20 +200,6 @@ async function doCreatePlaylist() {
   }
 }
 
-async function doDeletePlaylist(pl) {
-  if (!window.confirm(`确定删除歌单「${pl.name}」吗？`)) return
-  try {
-    const res = await deletePlaylist(pl.id)
-    if (res.data.status === 1) {
-      loadPlaylists()
-    } else {
-      alert(res.data.errmsg || res.data.msg || '删除失败')
-    }
-  } catch (e) {
-    if (e.response?.status !== 401) alert('网络错误')
-  }
-}
-
 function openLogin() {
   if (showLogin) showLogin.value = true
 }
@@ -284,11 +269,6 @@ function goPlaylist(id) {
 .pl-name { font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pl-count { font-size: var(--font-size-xs); color: var(--text-3); }
 .pl-arrow { color: var(--text-3); font-size: 20px; }
-.pl-del {
-  color: var(--text-3); font-size: 14px; padding: 4px 6px;
-  border-radius: var(--r-sm); transition: all var(--transition-fast); flex-shrink: 0;
-}
-.pl-del:hover { color: var(--like); background: var(--surface-3); }
 
 /* 创建歌单 */
 .create-box {

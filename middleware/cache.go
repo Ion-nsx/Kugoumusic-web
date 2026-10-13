@@ -34,30 +34,54 @@ func NewCacheStore(maxItems int) *CacheStore {
 	}
 }
 
+// 可缓存的只读接口前缀白名单。
+// 之所以用白名单而不是「检测响应头 no-store」：CORS 中间件会给所有 API 响应统一加
+// Cache-Control: no-store（为修扫码轮询被浏览器缓存的问题），若靠响应头判断会导致
+// 缓存永远不命中（曾长期空转）。这里显式列出公开、极少变化的接口。
+// 不含：用户相关（user/cloud/login/captcha）、歌单编辑与歌单详情/歌曲（刚加完歌不能看到旧数据）、
+// 播放地址/音质（依赖登录与请求参数）、图片与音频代理。
+var cacheablePrefixes = []string{
+	"/api/search",
+	"/api/rank",
+	"/api/top",
+	"/api/everyday",
+	"/api/recommend",
+	"/api/album",
+	"/api/artist",
+	"/api/lyric",
+	"/api/fm",
+	"/api/song/climax",
+	"/api/playlist/tags",
+	"/api/playlist/category",
+	"/api/comment/song",
+	"/api/comment/playlist",
+	"/api/comment/album",
+	"/api/comment/count",
+	"/api/comment/floor",
+	"/api/comment/hotword",
+}
+
+func isCacheablePath(p string) bool {
+	for _, prefix := range cacheablePrefixes {
+		if strings.HasPrefix(p, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
 // 计算缓存 key（基于方法、路径、查询参数）
 func cacheKey(r *http.Request) string {
 	h := sha256.Sum256([]byte(r.Method + "|" + r.URL.String()))
 	return hex.EncodeToString(h[:])
 }
 
-// 缓存响应中间件（对齐原 Node.js apicache：所有成功的 GET API 响应默认缓存 2 分钟）
-// 仅对 /api/ 路由生效，静态文件不做缓存（已 embed 在内存中）
+// 缓存响应中间件：对白名单内的成功 GET 响应缓存 2 分钟。
+// 静态文件不做缓存（已 embed 在内存中）
 func Cache(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// 仅缓存 API 路由
-		if !strings.HasPrefix(r.URL.Path, "/api/") {
-			next.ServeHTTP(w, r)
-			return
-		}
-
-		// 流式接口（音频代理）不做缓存：整个音频流会被 cacheWriter 缓冲进内存并
-		// 留存整个 TTL，导致每播放一首歌内存涨几十 MB 且过期后不主动释放
-		if strings.HasPrefix(r.URL.Path, "/api/proxy/audio") {
-			next.ServeHTTP(w, r)
-			return
-		}
-
-		if r.Method != http.MethodGet {
+		// 仅 GET 且命中白名单才缓存；其余直接放行
+		if r.Method != http.MethodGet || !isCacheablePath(r.URL.Path) {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -86,12 +110,6 @@ func Cache(next http.Handler) http.Handler {
 
 		// 成功的响应默认缓存 2 分钟
 		if cw.status < 400 {
-			// 检查是否有禁止缓存的标记
-			cacheControl := strings.ToLower(cw.headers.Get("Cache-Control"))
-			if strings.Contains(cacheControl, "no-cache") || strings.Contains(cacheControl, "no-store") {
-				return
-			}
-
 			ttl := 120 * time.Second // 默认 2 分钟
 			DefaultCache.Set(key, cacheItem{
 				data:      cw.body.Bytes(),

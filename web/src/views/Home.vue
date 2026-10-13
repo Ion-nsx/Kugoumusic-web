@@ -63,7 +63,7 @@
             <img v-if="p.cover" :src="imgUrl(p.cover)" :alt="p.name" loading="lazy" style="width:100%;height:100%;object-fit:cover" />
             <div v-else class="cover-tile" :style="{ background: tileColor(i) }">{{ noteIcon }}</div>
             <div class="cover-count"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7Z"/></svg>{{ fmtCount(p.play_count) }}</div>
-            <button class="cover-play" @click.stop="goPlaylist(p.id)"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7Z"/></svg></button>
+            <button class="cover-play" title="播放歌单" @click.stop="goPlaylist(p.id)"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7Z"/></svg></button>
           </div>
           <div class="card-name">{{ p.name }}</div>
           <div class="card-sub">{{ p.author || p.count + ' 首' }}</div>
@@ -95,7 +95,7 @@
               <div class="n">{{ s.name }}</div>
               <div class="a">{{ s.singer }}</div>
             </div>
-            <button class="play-sm" @click.stop="player.playList(r.songs, i)"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7Z"/></svg></button>
+            <button class="play-sm" title="播放" @click.stop="player.playList(r.songs, i)"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7Z"/></svg></button>
           </div>
         </div>
       </div>
@@ -146,10 +146,11 @@
           <div class="s-name">{{ song.name }}</div>
           <div class="s-album link" @click.stop="goAlbum(song.album_id)">{{ song.album }}</div>
           <div class="s-artist link" @click.stop="goArtist(song.singer_id)">{{ song.singer }}</div>
-          <button class="like" :class="{ liked: player.isLiked(song) }" @click.stop="player.toggleLike(song)">
+          <button class="like" :class="{ liked: player.isLiked(song) }" :title="player.isLiked(song) ? '取消喜欢' : '喜欢'" @click.stop="player.toggleLike(song)">
             <svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.5-8.7C1 9 3 5.5 6.5 5.5c2 0 3.6 1.2 4.5 3 .9-1.8 2.5-3 4.5-3 3.5 0 5.5 3.5 4 6.8C18.5 16.4 12 21 12 21Z"/></svg>
           </button>
           <div class="dur">{{ fmtDuration(song.duration) }}</div>
+          <SongMenu :song="song" />
         </div>
       </div>
       <div v-else class="empty">新歌加载中...</div>

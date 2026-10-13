@@ -21,7 +21,7 @@
         </button>
 
         <!-- 设置弹层 -->
-        <div class="settings-pop" v-if="showSettings" @click.stop>
+        <div class="settings-pop lg-glass-strong" v-if="showSettings" @click.stop>
           <div class="settings-head">
             <span>设置</span>
             <button class="settings-close" @click="showSettings = false">✕</button>
@@ -163,10 +163,12 @@ onBeforeUnmount(() => document.removeEventListener('click', onClickOutside))
   grid-template-columns: 1fr minmax(0, 560px) 1fr;
   align-items: center;
   padding: 13px 28px;
-  background: var(--bg);
-  backdrop-filter: blur(22px) saturate(1.5);
-  -webkit-backdrop-filter: blur(22px) saturate(1.5);
-  border-bottom: 1px solid var(--border);
+  /* 顶栏材质：自上而下渐隐的玻璃面，底边无硬分割线、无投影，
+     与内容自然融合——避免出现突兀的矩形玻璃板轮廓 */
+  background: var(--lg-topbar);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(18px) saturate(150%);
+  border: none;
   z-index: 4;
   flex-shrink: 0;
   gap: 16px;
@@ -177,16 +179,18 @@ onBeforeUnmount(() => document.removeEventListener('click', onClickOutside))
 .search {
   width: 100%; display: flex; align-items: center; gap: 9px;
   height: 42px;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--lg-tint-hi), var(--lg-tint));
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  backdrop-filter: blur(16px) saturate(160%);
+  border: 1px solid var(--lg-stroke);
   border-radius: var(--r-full);
   padding: 0 16px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: inset 0 1px 0 var(--lg-specular), inset 0 -1px 0 var(--lg-refract), var(--lg-shadow);
   transition: border-color .2s, box-shadow .2s;
 }
 .search:focus-within {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-soft);
+  box-shadow: inset 0 1px 0 var(--lg-specular), 0 0 0 3px var(--primary-soft), var(--lg-shadow);
 }
 .search svg { width: 15px; height: 15px; stroke: var(--text-3); fill: none; stroke-width: 2; flex-shrink: 0; }
 .search input {
@@ -201,14 +205,16 @@ onBeforeUnmount(() => document.removeEventListener('click', onClickOutside))
 /* 设置按钮 */
 .icon-btn {
   width: 36px; height: 36px; border-radius: 50%;
-  border: 1px solid var(--border);
-  background: var(--surface);
+  border: 1px solid var(--lg-stroke);
+  background: linear-gradient(180deg, var(--lg-tint-hi), var(--lg-tint));
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  backdrop-filter: blur(16px) saturate(160%);
   display: grid; place-items: center; cursor: pointer;
   color: var(--text-2);
-  box-shadow: var(--shadow-sm);
-  transition: all .15s var(--ease);
+  box-shadow: inset 0 1px 0 var(--lg-specular), inset 0 -1px 0 var(--lg-refract), var(--lg-shadow);
+  transition: all .28s var(--lg-spring);
 }
-.icon-btn:hover { background: var(--surface-3); color: var(--text-1); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+.icon-btn:hover { color: var(--text-1); transform: translateY(-2px); box-shadow: inset 0 1px 0 var(--lg-specular), inset 0 -1px 0 var(--lg-refract), var(--lg-shadow-hover); }
 .icon-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
 /* 设置弹层 */
@@ -216,13 +222,11 @@ onBeforeUnmount(() => document.removeEventListener('click', onClickOutside))
 .settings-pop {
   position: absolute; right: 0; top: calc(100% + 8px);
   width: 220px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  box-shadow: var(--shadow-lg);
+  /* 液态玻璃材质来自全局 .lg-glass-strong */
+  border-radius: var(--radius-xl);
   z-index: 30;
   overflow: hidden;
-  animation: pop-in .18s var(--ease);
+  animation: pop-in .22s var(--lg-spring);
 }
 @keyframes pop-in {
   from { opacity: 0; transform: translateY(-6px) scale(.97); }
@@ -244,7 +248,7 @@ onBeforeUnmount(() => document.removeEventListener('click', onClickOutside))
   padding: 10px 12px; border-radius: var(--r-sm);
   cursor: pointer; transition: background .15s;
 }
-.quality-item:hover { background: var(--surface-3); }
+.quality-item:hover { background: var(--hover); }
 .quality-item.on { background: var(--primary-soft); }
 .quality-item.on .q-name { color: var(--primary-deep); font-weight: 700; }
 .quality-item .q-tip { font-size: 11px; color: var(--text-3); }
@@ -253,34 +257,38 @@ onBeforeUnmount(() => document.removeEventListener('click', onClickOutside))
 .theme-toggle {
   display: flex; gap: 0;
   margin: 4px 10px 8px;
-  background: var(--surface-3);
-  border-radius: var(--r-sm);
-  padding: 2px;
+  background: var(--hover);
+  border: 1px solid var(--lg-stroke);
+  border-radius: var(--r-full);
+  padding: 3px;
 }
 .theme-toggle span {
   flex: 1; text-align: center;
-  padding: 6px 12px; border-radius: 6px;
+  padding: 6px 12px; border-radius: var(--r-full);
   font-size: 12px; color: var(--text-3);
-  cursor: pointer; transition: all .15s;
+  cursor: pointer; transition: all .28s var(--lg-spring);
 }
 .theme-toggle span.on {
-  background: var(--surface);
+  background: linear-gradient(180deg, var(--lg-tint-hi), var(--lg-tint));
   color: var(--text-1);
   font-weight: 600;
-  box-shadow: var(--shadow-sm);
+  box-shadow: inset 0 1px 0 var(--lg-specular), 0 2px 8px rgba(15,23,42,.10);
 }
 
 /* 用户区（右上角） */
 .user-entry {
   display: flex; align-items: center; gap: 8px;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--lg-tint-hi), var(--lg-tint));
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  backdrop-filter: blur(16px) saturate(160%);
+  border: 1px solid var(--lg-stroke);
   border-radius: var(--r-full);
   padding: 4px 14px 4px 4px;
   cursor: pointer;
-  transition: all .15s var(--ease);
+  box-shadow: inset 0 1px 0 var(--lg-specular), inset 0 -1px 0 var(--lg-refract), var(--lg-shadow);
+  transition: all .28s var(--lg-spring);
 }
-.user-entry:hover { background: var(--surface-3); box-shadow: var(--shadow-sm); }
+.user-entry:hover { transform: translateY(-2px); box-shadow: inset 0 1px 0 var(--lg-specular), inset 0 -1px 0 var(--lg-refract), var(--lg-shadow-hover); }
 .user-avatar,
 .user-avatar-img {
   width: 26px; height: 26px; border-radius: 50%;

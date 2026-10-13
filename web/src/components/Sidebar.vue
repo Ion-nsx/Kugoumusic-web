@@ -1,5 +1,5 @@
 <template>
-  <aside class="sidebar">
+  <aside class="sidebar lg-glass">
     <!-- 品牌 Logo -->
     <div class="logo">
       <div class="logo-badge">
@@ -52,8 +52,10 @@
 
 <style scoped>
 .sidebar {
-  background: var(--surface);
-  border-right: 1px solid var(--border);
+  /* 液态玻璃材质来自全局 .lg-glass；这里只保留布局 + 右侧玻璃分隔线 */
+  border: none;
+  border-right: 1px solid var(--lg-stroke);
+  border-radius: 0;
   display: flex;
   flex-direction: column;
   padding: 22px 14px 18px;
@@ -95,14 +97,14 @@
   transition: background .18s var(--ease), color .18s var(--ease);
 }
 .nav-item svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.nav-item:hover { background: var(--surface-3); color: var(--text-1); }
+.nav-item:hover { background: var(--hover); color: var(--text-1); }
 .nav-item.active {
   background: var(--primary-soft); color: var(--primary-deep); font-weight: 600;
 }
 .nav-item.active .nav-ic {
-  background: var(--primary);
+  background: linear-gradient(180deg, #43B2FA, var(--primary));
   color: #fff;
-  box-shadow: 0 3px 10px rgba(44,166,248,.4);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 4px 12px rgba(44,166,248,.45);
 }
 .nav-item.active::before {
   content: '';

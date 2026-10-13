@@ -1,6 +1,7 @@
 <template>
+  <Teleport to="body">
   <div class="modal-overlay" @click.self="$emit('close')">
-    <div class="modal-content">
+    <div class="modal-content lg-glass-strong">
       <div class="modal-header">
         <h2 class="modal-title">{{ reason || '登录' }}</h2>
         <button class="close-btn" @click="$emit('close')">✕</button>
@@ -50,6 +51,7 @@
       </div>
     </div>
   </div>
+  </Teleport>
 </template>
 
 <script setup>
@@ -126,7 +128,6 @@ function startQRPolling(key) {
         // 状态码: 0=过期 1=等待扫码 2=待确认 4=登录成功
         if (data.status === 4) {
           clearInterval(qrTimer)
-          console.log('[QR Login] raw data:', JSON.stringify(data))
           auth.setCredentials({
             token: data.token,
             user_id: data.user_id,
@@ -203,18 +204,17 @@ async function loginPhone() {
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
 }
 
 .modal-content {
   width: 400px;
   max-width: 90vw;
   padding: var(--spacing-2xl);
-  background: var(--surface);
-  border: 1px solid var(--border);
+  /* 液态玻璃材质来自全局 .lg-glass-strong */
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-lg);
-  animation: modal-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: modal-in 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 @keyframes modal-in {
   from { opacity: 0; transform: scale(0.94) translateY(8px); }

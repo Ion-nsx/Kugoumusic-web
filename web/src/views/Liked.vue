@@ -27,10 +27,11 @@
         <div class="s-name">{{ song.name }}</div>
         <div class="s-album link" @click.stop="goAlbum(song.album_id)">{{ song.album || '单曲' }}</div>
         <div class="s-artist link" @click.stop="goArtist(song.singer_id)">{{ song.singer }}</div>
-        <button class="like liked" @click.stop="unlike(song)">
+        <button class="like liked" title="取消喜欢" @click.stop="unlike(song)">
           <svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.5-8.7C1 9 3 5.5 6.5 5.5c2 0 3.6 1.2 4.5 3 .9-1.8 2.5-3 4.5-3 3.5 0 5.5 3.5 4 6.8C18.5 16.4 12 21 12 21Z"/></svg>
         </button>
         <div class="dur">{{ fmtDuration(song.duration) }}</div>
+        <SongMenu :song="song" />
       </div>
     </div>
 

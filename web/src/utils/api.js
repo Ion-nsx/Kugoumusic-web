@@ -148,8 +148,6 @@ export const getUserFollow = () => api.get('/user/follow')
 // 歌单管理（需登录）
 export const createPlaylist = (name, is_pri = 0) =>
   api.post('/playlist/create', null, { params: { name, is_pri } })
-export const deletePlaylist = (listid) =>
-  api.post('/playlist/delete', null, { params: { listid } })
 export const addPlaylistTracks = (listid, songs) =>
   api.post('/playlist/tracks/add', songs, { params: { listid } })
 export const deletePlaylistTracks = (listid, file_ids) =>

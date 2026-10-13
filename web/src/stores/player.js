@@ -284,6 +284,26 @@ export const usePlayerStore = defineStore('player', () => {
     }
   }
 
+  // 插入到「下一首」：若已在队列中则先移除，再插到当前歌曲之后；队列为空则直接播放
+  function insertNext(song) {
+    if (!song || !song.id) return
+    const cur = queueIndex.value
+    if (cur < 0 || queue.value.length === 0) {
+      queue.value = [song]
+      queueIndex.value = 0
+      loadSong(song)
+      play()
+      return
+    }
+    const existing = queue.value.findIndex(s => s.id === song.id)
+    if (existing === cur) return // 就是当前正在播放的这首，忽略
+    if (existing >= 0) {
+      queue.value.splice(existing, 1)
+      if (existing < cur) queueIndex.value = cur - 1 // 移除的位置在当前之前，索引前移
+    }
+    queue.value.splice(queueIndex.value + 1, 0, song)
+  }
+
   function playNow(song) {
     const idx = queue.value.findIndex(s => s.id === song.id)
     if (idx >= 0) {
@@ -558,7 +578,7 @@ export const usePlayerStore = defineStore('player', () => {
     queue, queueIndex, hasNext, hasPrev, playError, audioEl,
     likedSongs, likeLoading, history, localFiles,
     loadSong, play, pause, togglePlay, setVolume, toggleMute, setPlaybackRate,
-    next, prev, addToQueue, playNow, playList, playAt, clearQueue, updateCurrentTime, setQuality, switchQuality, seekTo, setAudioEl,
+    next, prev, addToQueue, insertNext, playNow, playList, playAt, clearQueue, updateCurrentTime, setQuality, switchQuality, seekTo, setAudioEl,
     toggleLike, isLiked, loadLiked, clearLiked, addLocalFiles, removeLocalFile
   }
 })

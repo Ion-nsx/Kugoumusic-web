@@ -77,10 +77,11 @@
                   <div class="s-name">{{ song.name }}</div>
                   <div class="s-album link" @click.stop="goAlbum(song.album_id)">{{ song.album }}</div>
                   <div class="s-artist link" @click.stop="goArtist(song.singer_id)">{{ song.singer }}</div>
-                  <button class="like" :class="{ liked: player.isLiked(song) }" @click.stop="player.toggleLike(song)">
+                  <button class="like" :class="{ liked: player.isLiked(song) }" :title="player.isLiked(song) ? '取消喜欢' : '喜欢'" @click.stop="player.toggleLike(song)">
                     <svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.5-8.7C1 9 3 5.5 6.5 5.5c2 0 3.6 1.2 4.5 3 .9-1.8 2.5-3 4.5-3 3.5 0 5.5 3.5 4 6.8C18.5 16.4 12 21 12 21Z"/></svg>
                   </button>
                   <div class="dur">{{ formatDuration(song.duration) }}</div>
+                  <SongMenu :song="song" />
                 </div>
               </div>
             </template>
@@ -96,7 +97,7 @@
             </div>
             <div v-else-if="seg.type === 'author'" class="author-list">
               <div class="author-item" v-for="a in seg.lists" :key="a.AuthorId" @click="goArtist(a.AuthorId)">
-                <img v-if="a.Avatar" class="author-avatar" :src="a.Avatar.replace('{size}', '120')" loading="lazy" />
+                <img v-if="a.Avatar" class="author-avatar" :src="a.Avatar.replace('{size}', '120')" :alt="a.AuthorName || '歌手头像'" loading="lazy" />
                 <div v-else class="author-avatar placeholder"></div>
                 <div class="author-meta">
                   <div class="author-name">{{ a.AuthorName }}</div>
@@ -130,10 +131,11 @@
             <div class="s-name">{{ song.name }}</div>
             <div class="s-album link" @click.stop="goAlbum(song.album_id)">{{ song.album }}</div>
             <div class="s-artist link" @click.stop="goArtist(song.singer_id)">{{ song.singer }}</div>
-            <button class="like" :class="{ liked: player.isLiked(song) }" @click.stop="player.toggleLike(song)">
+            <button class="like" :class="{ liked: player.isLiked(song) }" :title="player.isLiked(song) ? '取消喜欢' : '喜欢'" @click.stop="player.toggleLike(song)">
               <svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.5-8.7C1 9 3 5.5 6.5 5.5c2 0 3.6 1.2 4.5 3 .9-1.8 2.5-3 4.5-3 3.5 0 5.5 3.5 4 6.8C18.5 16.4 12 21 12 21Z"/></svg>
             </button>
             <div class="dur">{{ formatDuration(song.duration) }}</div>
+            <SongMenu :song="song" />
           </div>
         </div>
       </template>
@@ -171,7 +173,7 @@
       <template v-else-if="searchType === 'author'">
         <div class="author-list">
           <div class="author-item" v-for="a in typedLists" :key="a.AuthorId" @click="goArtist(a.AuthorId)">
-            <img v-if="a.Avatar" class="author-avatar" :src="a.Avatar.replace('{size}', '120')" loading="lazy" />
+            <img v-if="a.Avatar" class="author-avatar" :src="a.Avatar.replace('{size}', '120')" :alt="a.AuthorName || '歌手头像'" loading="lazy" />
             <div v-else class="author-avatar placeholder"></div>
             <div class="author-meta">
               <div class="author-name">{{ a.AuthorName }}</div>
@@ -196,6 +198,7 @@
             <div class="s-album link" @click.stop="goAlbum(item.album_id)">{{ item.album }}</div>
             <div class="s-artist link" @click.stop="goArtist(item.singer_id)">{{ item.singer }}</div>
             <div class="dur">{{ formatDuration(item.durationSec) }}</div>
+            <SongMenu :song="item" />
           </div>
         </div>
       </template>

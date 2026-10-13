@@ -53,6 +53,7 @@
           <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
         </div>
         <div class="dur">{{ fmtDuration(song.duration) }}</div>
+        <SongMenu :song="song" />
       </div>
     </div>
 

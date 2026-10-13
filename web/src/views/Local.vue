@@ -40,6 +40,7 @@
           <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg>
         </button>
         <div class="dur"></div>
+        <SongMenu :song="song" />
       </div>
     </div>
 

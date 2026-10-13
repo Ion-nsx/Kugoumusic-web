@@ -33,6 +33,8 @@
             class="color-dot"
             :class="{ on: hlColor === c }"
             :style="{ background: c }"
+            :title="'歌词高亮色 ' + c"
+            :aria-label="'歌词高亮色 ' + c"
             @click="hlColor = c"
           ></button>
         </div>
@@ -649,4 +651,27 @@ function startDrag(e) {
 }
 .ctl.main:hover { background: #f2f3f5; }
 .ctl.main svg { width: 26px; height: 26px; }
+
+/* ===== Liquid Glass 统一高光：为歌词页玻璃控件补顶部镜面高光 ===== */
+.lyric-back, .lyric-font-btn, .lyric-palette-btn, .ctl {
+  -webkit-backdrop-filter: blur(14px) saturate(1.6);
+  backdrop-filter: blur(14px) saturate(1.6);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.38),
+    inset 0 -1px 0 rgba(0,0,0,.20),
+    0 6px 20px rgba(0,0,0,.28);
+}
+.color-panel {
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.16),
+    0 16px 48px rgba(0,0,0,.5);
+}
+.ctl.main {
+  background: linear-gradient(180deg, #ffffff 0%, #eef1f4 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.95),
+    inset 0 -1px 0 rgba(0,0,0,.06),
+    0 10px 30px rgba(0,0,0,.42);
+}
+.ctl.main:hover { background: linear-gradient(180deg, #ffffff 0%, #e8ebef 100%); }
 </style>
